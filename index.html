@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZMTQ Cross Connect</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+JP:wght@400;700&family=Oswald:wght@500&family=Shippori+Mincho:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-color: #0d1117;
+    --gold: #e6cb82;
+    --gold-dim: #a38d4a;
+    --text-main: #f0e6d2;
+    --card-bg: #1a202c;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background: radial-gradient(circle at center, #1c222e 0%, #0d1117 100%);
+    color: var(--text-main);
+    font-family: 'Noto Sans JP', sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* 背景パーティクル */
+  #particles {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .particle {
+    position: absolute;
+    background-color: var(--gold);
+    border-radius: 50%;
+    opacity: 0;
+    bottom: -10px;
+    animation: floatUp linear infinite;
+    box-shadow: 0 0 6px var(--gold);
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(0) scale(0.5); opacity: 0; }
+    20% { opacity: 0.6; }
+    80% { opacity: 0.6; }
+    100% { transform: translateY(-100vh) scale(1.2); opacity: 0; }
+  }
+
+  /* モーダル（アニメーション付き） */
+  .modal {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, visibility 0.3s;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 200;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .modal.active {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .modal-content {
+    background: radial-gradient(circle at top left, #232a38 0%, #151a22 100%);
+    border: 2px solid var(--gold);
+    padding: 30px;
+    border-radius: 12px;
+    max-width: 85%;
+    max-height: 80vh;
+    overflow-y: auto;
+    color: var(--text-main);
+    line-height: 1.6;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(230,203,130,0.1);
+    /* ポップアップのアニメーション（バウンスをなくし、フワッとスケールするイージングに） */
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+  }
+  .modal.active .modal-content {
+    transform: scale(1) translateY(0);
+  }
+  .modal-content h2 {
+    font-family: 'Shippori Mincho', serif;
+    color: var(--gold);
+    margin-top: 0;
+    border-bottom: 1px solid var(--gold-dim);
+    padding-bottom: 10px;
+    text-align: center;
+  }
+  .modal-content h3 { color: #87cefa; margin-bottom: 5px; font-size: 1.1rem; }
+  .modal-content ul { margin-top: 0; padding-left: 20px; }
+
+  /* ホーム画面 */
+  #home-screen {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  #home-title {
+    font-family: 'Cinzel', 'Shippori Mincho', serif;
+    font-size: 2.8rem;
+    color: var(--gold);
+    text-shadow: 0 0 15px rgba(230, 203, 130, 0.6), 0 5px 5px rgba(0,0,0,0.8);
+    margin-bottom: 50px;
+    letter-spacing: 4px;
+    text-align: center;
+  }
+
+  .home-btn, #action-btn {
+    font-family: 'Shippori Mincho', serif;
+    padding: 12px 40px;
+    background: linear-gradient(180deg, rgba(35, 42, 55, 0.95) 0%, rgba(15, 20, 28, 0.95) 100%);
+    color: var(--gold);
+    border: 2px solid var(--gold-dim);
+    border-radius: 6px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+    width: 260px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.1);
+    position: relative;
+  }
+  .home-btn::after, #action-btn::after {
+    content: ''; position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
+    border: 1px solid rgba(230, 203, 130, 0.25); border-radius: 4px; pointer-events: none;
+  }
+  .home-btn:hover, #action-btn:hover {
+    background: linear-gradient(180deg, rgba(45, 53, 68, 0.95) 0%, rgba(20, 26, 35, 0.95) 100%);
+    box-shadow: 0 0 20px rgba(230, 203, 130, 0.4), 0 8px 15px rgba(0,0,0,0.7);
+    transform: translateY(-2px); border-color: var(--gold);
+  }
+  #start-btn { font-size: 1.5rem; padding: 15px 40px; }
+  #action-btn { width: auto; font-size: 1.2rem; padding: 10px 45px; margin-bottom: 0; }
+  #action-btn:disabled {
+    border-color: #444; color: #666; background: #111; box-shadow: none; cursor: not-allowed; transform: none;
+  }
+  #action-btn:disabled::after { border-color: transparent; }
+  .diff-btn { font-size: 1.3rem; }
+
+  /* 画面揺れアニメーション（揺れ幅を小さく調整） */
+  @keyframes screenShake {
+    0% { transform: translate(0.5px, 0.5px) rotate(0deg); }
+    20% { transform: translate(-1.5px, 0px) rotate(0.5deg); }
+    40% { transform: translate(0.5px, -1px) rotate(-0.5deg); }
+    60% { transform: translate(-1.5px, 1px) rotate(0deg); }
+    80% { transform: translate(1px, 0.5px) rotate(0.5deg); }
+    100% { transform: translate(0px, 0px) rotate(0deg); }
+  }
+  .shake-effect { animation: screenShake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+
+  /* ゲーム画面レイアウト */
+  #game-layout {
+    display: none; flex-direction: row; height: 100%; width: 100%; position: relative; z-index: 10;
+  }
+  #menu-btn {
+    position: absolute; top: 10px; right: 50px; font-size: 2rem; color: var(--gold);
+    z-index: 50; cursor: pointer; user-select: none; text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+  }
+  .sidebar-hp {
+    width: 45px; background: rgba(10, 12, 16, 0.7); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 15px 0;
+    border-left: 1px solid var(--gold-dim); border-right: 1px solid var(--gold-dim);
+    z-index: 10; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+  }
+  .sidebar-hp .hp-label {
+    font-family: 'Shippori Mincho', serif; color: var(--gold); font-size: 0.9rem;
+    writing-mode: vertical-rl; letter-spacing: 3px; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  }
+  .sidebar-hp .hp-value {
+    font-family: 'Oswald', sans-serif; color: #fff; font-size: 1.1rem;
+    writing-mode: vertical-rl; letter-spacing: 1px; margin: 10px 0;
+  }
+  .hp-bar-vert-wrap {
+    width: 10px; height: 150px; background: #111; border-radius: 5px;
+    border: 1px solid var(--gold-dim); display: flex; flex-direction: column;
+    justify-content: flex-end; overflow: hidden; margin: 10px 0;
+  }
+  #enemy-hp-fill { background: linear-gradient(to top, #8b0000, #ff4d4d); width: 100%; transition: height 0.3s ease-out; }
+  #player-hp-fill { background: linear-gradient(to top, #006400, #32cd32); width: 100%; transition: height 0.3s ease-out; }
+
+  #center-column { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+  #enemy-area {
+    min-height: 12vh; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-bottom: 1px solid var(--gold-dim); background: linear-gradient(to bottom, rgba(20,25,35,0.8), rgba(10,12,16,0.6));
+    padding: 10px 0; z-index: 10;
+  }
+  #enemy-hand-container { display: flex; gap: 6px; justify-content: center; width: 100%; }
+
+  #battle-area {
+    flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(circle, rgba(230,203,130,0.02) 0%, rgba(13,17,23,0) 80%); overflow: hidden; z-index: 1;
+  }
+  .battalion { position: absolute; top: 0; display: flex; gap: 5px; z-index: 5; }
+  .enemy-card { transform: rotate(180deg); }
+
+  #event-message {
+    font-family: 'Shippori Mincho', serif; position: absolute; font-size: 1.8rem; color: var(--gold);
+    text-shadow: 0 0 10px rgba(0,0,0,0.8), 0 0 20px var(--gold); opacity: 0; pointer-events: none;
+    z-index: 6; transition: opacity 0.5s; text-align: center; letter-spacing: 2px;
+  }
+
+  #player-area {
+    min-height: 18vh; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    border-top: 1px solid var(--gold-dim); background: linear-gradient(to top, rgba(20,25,35,0.8), rgba(10,12,16,0.6));
+    padding-bottom: 15px; box-sizing: border-box; z-index: 10;
+  }
+  #player-hand-container { display: flex; gap: 8px; justify-content: center; width: 100%; margin-bottom: 12px; }
+
+  /* カードデザイン */
+  .card {
+    width: 14vw; max-width: 60px; height: 21vw; max-height: 90px; background-color: var(--card-bg);
+    border: 1px solid var(--gold-dim); border-radius: 4px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+  }
+  .card img { width: 100%; height: 100%; object-fit: cover; }
+  .card-name {
+    position: absolute; bottom: 0; width: 100%; background: rgba(0, 0, 0, 0.8); text-align: center;
+    font-size: 0.6rem; padding: 3px 0; white-space: nowrap; overflow: hidden; color: var(--text-main);
+  }
+  .player-card { max-width: 70px; max-height: 105px; cursor: pointer; transition: transform 0.2s; }
+  .player-card.selected { transform: translateY(-10px); border: 1px solid var(--gold); box-shadow: 0 0 15px rgba(230, 203, 130, 0.6); }
+
+  /* 補充アニメーション */
+  @keyframes packLeft { 0% { transform: translateX(40px); } 100% { transform: translateX(0); } }
+  .pack-left { animation: packLeft 0.3s ease-out; }
+  @keyframes slideInRightPlayer { 0% { transform: translateX(80px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
+  .slide-in-right-player { animation: slideInRightPlayer 0.3s ease-out; }
+  @keyframes packRight { 0% { transform: translateX(-40px) rotate(180deg); } 100% { transform: translateX(0) rotate(180deg); } }
+  .pack-right { animation: packRight 0.3s ease-out; }
+  @keyframes slideInLeftEnemy { 0% { transform: translateX(-80px) rotate(180deg); opacity: 0; } 100% { transform: translateX(0) rotate(180deg); opacity: 1; } }
+  .slide-in-left-enemy { animation: slideInLeftEnemy 0.3s ease-out; }
+
+  /* カットイン演出 */
+  #cutin-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none;
+    flex-direction: column; align-items: center; justify-content: center; z-index: 10;
+  }
+  #cutin-overlay.active { display: flex; }
+  #cutin-bg-expand {
+    position: absolute; top: 50%; left: 0; width: 100%; height: 180px; transform: translateY(-50%) scaleX(0);
+    transform-origin: left center; box-sizing: border-box; z-index: 1; transition: all 0.3s;
+  }
+  #cutin-overlay.active #cutin-bg-expand { animation: bgSweep 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  @keyframes bgSweep { 0% { transform: translateY(-50%) scaleX(0); } 100% { transform: translateY(-50%) scaleX(1); } }
+
+  #cutin-overlay.player #cutin-bg-expand {
+    background: linear-gradient(90deg, rgba(5,20,40,0.95), rgba(10,30,60,0.98), rgba(5,20,40,0.95));
+    border-top: 2px solid #4169e1; border-bottom: 2px solid #4169e1;
+  }
+  #cutin-overlay.enemy #cutin-bg-expand {
+    background: linear-gradient(90deg, rgba(30,5,5,0.95), rgba(40,10,10,0.98), rgba(30,5,5,0.95));
+    border-top: 2px solid #ff4d4d; border-bottom: 2px solid #ff4d4d;
+  }
+  #cutin-overlay.special #cutin-bg-expand {
+    background: linear-gradient(90deg, rgba(20,5,35,0.95), rgba(45,15,65,0.98), rgba(20,5,35,0.95));
+    border-top: 2px solid #d8bfd8; border-bottom: 2px solid #d8bfd8; box-shadow: 0 0 20px rgba(216, 191, 216, 0.6);
+  }
+
+  #cutin-panel-container {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) skewX(-15deg);
+    display: flex; justify-content: center; gap: 8px; z-index: 2; opacity: 0; height: 180px; width: auto;
+  }
+  #cutin-overlay.active #cutin-panel-container { animation: panelIn 0.3s 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  @keyframes panelIn { 0% { opacity: 0; transform: translate(-50%, -40%) skewX(-15deg); } 100% { opacity: 1; transform: translate(-50%, -50%) skewX(-15deg); } }
+
+  .cutin-slice {
+    width: 110px; height: 100%; overflow: hidden; background-color: rgba(26, 32, 44, 0.5);
+    position: relative; border-left: 2px solid; border-right: 2px solid; box-sizing: border-box; flex: none;
+  }
+  #cutin-overlay.player .cutin-slice { border-color: #4169e1; }
+  #cutin-overlay.enemy .cutin-slice { border-color: #ff4d4d; }
+  #cutin-overlay.special .cutin-slice { border-color: #d8bfd8; box-shadow: 0 0 15px rgba(216, 191, 216, 0.4); }
+
+  /* ズーム（ケンバーンズ効果） */
+  .cutin-slice img { width: 100%; height: 100%; object-fit: cover; object-position: center; transform: skewX(15deg) scale(1.2); }
+  #cutin-overlay.active .cutin-slice img { animation: imgZoom 1.5s ease-out forwards; }
+  @keyframes imgZoom { 0% { transform: skewX(15deg) scale(1.2); } 100% { transform: skewX(15deg) scale(1.35); } }
+
+  /* 光の反射（グレア）の移動距離を伸ばす */
+  .cutin-glare {
+    position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+    transform: skewX(-15deg); z-index: 10; pointer-events: none;
+  }
+  #cutin-overlay.active .cutin-glare { animation: glareSweep 0.6s 0.2s ease-out forwards; }
+  @keyframes glareSweep { 0% { left: -100%; } 100% { left: 300%; } }
+
+  #cutin-text-wrap { position: absolute; bottom: 20%; right: 5%; z-index: 3; }
+  .cutin-text-inner {
+    text-align: right; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-left: 4px solid; opacity: 0;
+  }
+  #cutin-overlay.player .cutin-text-inner { border-color: #4169e1; }
+  #cutin-overlay.enemy .cutin-text-inner { border-color: #ff4d4d; }
+  #cutin-overlay.special .cutin-text-inner { border-color: #d8bfd8; background: rgba(0, 0, 0, 0.85); box-shadow: 0 0 15px rgba(216, 191, 216, 0.5); }
+
+  /* スラムアニメーション */
+  .slam-animation { animation: textSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards; }
+  @keyframes textSlam {
+    0% { transform: translateX(100px) scale(1.2) skewX(-10deg); opacity: 0; }
+    70% { transform: translateX(-10px) scale(0.95) skewX(5deg); opacity: 1; }
+    100% { transform: translateX(0) scale(1) skewX(0); opacity: 1; }
+  }
+
+  .cutin-text-main { font-family: 'Shippori Mincho', serif; font-size: 2rem; line-height: 1.2; letter-spacing: 2px; }
+  #cutin-overlay.player .cutin-text-main { color: #87cefa; text-shadow: 0 0 8px rgba(65, 105, 225, 0.8); }
+  #cutin-overlay.enemy .cutin-text-main { color: #ffcccc; text-shadow: 0 0 8px rgba(255, 77, 77, 0.8); }
+  #cutin-overlay.special .cutin-text-main { color: #f8f8ff; text-shadow: 0 0 10px #da70d6, 0 0 20px #da70d6; }
+  .cutin-text-score { font-family: 'Oswald', sans-serif; font-size: 1.5rem; color: #fff; margin-top: 5px; letter-spacing: 1px; }
+
+  /* スマホ向けのレスポンシブ対応 */
+  @media (max-width: 600px) {
+    #home-title {
+      font-size: 1.8rem;
+      margin-bottom: 30px;
+    }
+    .home-btn, #action-btn {
+      width: 80%;
+      max-width: 260px;
+      font-size: 1.1rem;
+      padding: 10px 20px;
+    }
+    #start-btn {
+      font-size: 1.2rem;
+    }
+    .modal-content {
+      max-height: 60vh; /* 縦幅を小さくして画面外をタップしやすく */
+      padding: 20px;
+    }
+    .modal-content h2 {
+      font-size: 1.3rem;
+    }
+    #cutin-text-wrap {
+      bottom: 5%; /* イラストの下部に配置 */
+      right: 5%;
+    }
+    .cutin-text-main {
+      font-size: 1.2rem;
+    }
+    .cutin-text-score {
+      font-size: 1rem;
+    }
+    .cutin-text-inner {
+      padding: 8px 20px;
+    }
+    .sidebar-hp {
+      width: 30px; /* 少し細くする */
+    }
+  }
+
+</style>
+</head>
+<body>
+
+  <div id="particles"></div>
+
+  <div id="home-screen">
+    <div id="home-title">ZMTQ Cross Connect</div>
+    <button id="start-btn" class="home-btn">ゲーム開始</button>
+    <button id="role-list-btn" class="home-btn">役一覧</button>
+    <button id="update-info-btn" class="home-btn">更新情報</button>
+  </div>
+
+  <div id="tutorial-modal" class="modal">
+    <div class="modal-content">
+      <h2>ZMTQ Cross Connect へようこそ</h2>
+      <p>手札のキャラクターから共通する特徴（タグ）を持つカードを2枚以上選んで「進撃」してください。</p>
+      <p>役の強さと枚数に応じて攻撃力が計算され、敵陣へ進軍します。</p>
+      <p>敵もリアルタイムで役を作って進撃してきます。<br>敵のカードが自陣（画面下の境界線）に到達する前に進撃し、盤面で迎撃しましょう！</p>
+      <p>激突した場合は、より強い役を作った側の攻撃が相手にダメージを与えます。</p>
+      <p style="text-align:center; margin-top:20px; color:var(--gold); font-size:0.9rem;">※画面外をクリックして閉じます</p>
+    </div>
+  </div>
+
+  <div id="difficulty-modal" class="modal">
+    <div class="modal-content" style="text-align:center;">
+      <h2>難易度選択</h2>
+      <button class="home-btn diff-btn" data-diff="EASY">EASY<br><span style="font-family:'Noto Sans JP', sans-serif; font-size:0.8rem">ランダム・ゆっくり進軍</span></button><br>
+      <button class="home-btn diff-btn" data-diff="NORMAL">NORMAL<br><span style="font-family:'Noto Sans JP', sans-serif; font-size:0.8rem">少し強い・ゆっくり進軍</span></button><br>
+      <button class="home-btn diff-btn" data-diff="HARD">HARD<br><span style="font-family:'Noto Sans JP', sans-serif; font-size:0.8rem">最大火力・素早く進軍</span></button>
+    </div>
+  </div>
+
+  <div id="role-list-modal" class="modal">
+    <div class="modal-content">
+      <h2>役一覧</h2>
+      <p style="color: var(--gold); font-size: 0.9rem; text-align: center;">※ここには書かれていない高得点の特殊な役もあります</p>
+      <div id="role-list-content"></div>
+    </div>
+  </div>
+
+  <div id="update-info-modal" class="modal">
+    <div class="modal-content">
+      <h2>更新情報</h2>
+      <ul>
+        <li>2026/05/23 タイトルを「ZMTQ Cross Connect」に決定しました。</li>
+        <li>2026/05/22 ZMTQカードチェイン(仮)を制作しました。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div id="pause-modal" class="modal">
+    <div class="modal-content" style="text-align:center;">
+      <h2>ポーズメニュー</h2>
+      <button id="resume-btn" class="home-btn">ゲームを続ける</button><br>
+      <button id="quit-btn" class="home-btn" style="margin-top:10px;">ホームへ戻る</button>
+    </div>
+  </div>
+
+  <div id="result-modal" class="modal">
+    <div class="modal-content" style="text-align:center;">
+      <h2 id="result-title">勝敗</h2>
+      <p id="result-desc"></p>
+      <button id="rematch-btn" class="home-btn">もう一度戦う</button><br>
+      <button id="result-home-btn" class="home-btn" style="margin-top:10px;">ホームへ戻る</button>
+    </div>
+  </div>
+
+  <div id="game-layout">
+    <div id="menu-btn">≡</div>
+    <div class="sidebar-hp">
+      <div class="hp-label">敵陣</div>
+      <div class="hp-value" id="enemy-hp-text">1000</div>
+      <div class="hp-bar-vert-wrap"><div id="enemy-hp-fill"></div></div>
+    </div>
+    <div id="center-column">
+      <div id="enemy-area"><div id="enemy-hand-container"></div></div>
+      <div id="battle-area">
+        <div id="event-message"></div>
+        <div id="cutin-overlay">
+          <div id="cutin-bg-expand"></div>
+          <div id="cutin-panel-container"></div>
+          <div id="cutin-text-wrap"></div>
+        </div>
+      </div>
+      <div id="player-area">
+        <div id="player-hand-container"></div>
+        <button id="action-btn">進撃</button>
+      </div>
+    </div>
+    <div class="sidebar-hp">
+      <div class="hp-label">自陣</div>
+      <div class="hp-value" id="player-hp-text">1000</div>
+      <div class="hp-bar-vert-wrap"><div id="player-hp-fill"></div></div>
+    </div>
+  </div>
+
+<script>
+function createParticles() {
+  const container = document.getElementById('particles');
+  if(!container) return;
+  for(let i=0; i<40; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.animationDuration = (Math.random() * 8 + 6) + 's';
+    p.style.animationDelay = (Math.random() * 5) + 's';
+    const size = Math.random() * 3 + 1;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    container.appendChild(p);
+  }
+}
+
+const characters = [
+  { id: 'frappe', name: 'フラッペ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法', '回復魔法', '結界魔法'], 所属: ['勇者', '現代勇者', 'フラッペパーティ'], 国家: ['バネッサ'] } },
+  { id: 'matsuharu', name: 'マツハル', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['光'], 戦法: ['武器', '剣'], 所属: ['勇者', '現代勇者', 'マツハルパーティ'], 国家: ['-'] } },
+  { id: 'decoy', name: 'デコイ', tags: { 種族: ['人間'], 役職: ['弓使い'], 属性: ['火'], 戦法: ['武器', '弓矢'], 所属: ['勇者', '現代勇者', 'リリー商会', 'デコイパーティ'], 国家: ['バネッサ'] } },
+  { id: 'musubi', name: '心結', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['光'], 戦法: ['武器', '刀', '白魔法'], 所属: ['勇者', '現代勇者', '心結パーティ'], 国家: ['東の国'] } },
+  { id: 'luna', name: 'ルナ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法', '回復魔法', '強化魔法'], 所属: ['勇者', '現代勇者', 'ルナパーティ'], 国家: ['バネッサ'] } },
+  { id: 'alice', name: 'アリス', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['火'], 戦法: ['武器', '剣'], 所属: ['勇者', '現代勇者', 'バネッサ近衛兵', 'アリスパーティ'], 国家: ['バネッサ'] } },
+  { id: 'lily', name: 'リリー', tags: { 種族: ['人間'], 役職: ['商人'], 属性: ['火', '雷'], 戦法: ['武器', '魔導具'], 所属: ['リリー商会'], 国家: ['トラベラー'] } },
+  { id: 'kinako', name: 'キナコ', tags: { 種族: ['獣人', '犬獣人'], 役職: ['近衛兵'], 属性: ['-'], 戦法: ['武器', '剣'], 所属: ['バネッサ近衛兵'], 国家: ['バネッサ', '獣の国'] } },
+  { id: '1gou', name: '壱ノ護王', tags: { 種族: ['人間'], 役職: ['護王'], 属性: ['光', '雷'], 戦法: ['魔法', '黒魔法', '白魔法', '回復魔法', '結界魔法'], 所属: ['-'], 国家: ['バネッサ'] } },
+  { id: '3gou', name: '參ノ護王', tags: { 種族: ['魔族'], 役職: ['護王'], 属性: ['闇', '火'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'] } },
+  { id: 'jaga', name: 'ジャガ', tags: { 種族: ['魔族', 'スライム'], 役職: ['狂戦士', '賢者'], 属性: ['水', '地', '雷', '火', '光'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'] } },
+  { id: 'kurumi', name: 'クルミ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法'], 所属: ['-'], 国家: ['バネッサ', '華都'] } },
+  { id: 'fufu', name: 'フフ', tags: { 種族: ['人間'], 役職: ['神官'], 属性: ['光'], 戦法: ['魔法', '封印魔法'], 所属: ['ビックス教団'], 国家: ['教団市国'] } },
+  { id: 'akito', name: 'アキト', tags: { 種族: ['吸血鬼'], 役職: ['道化師', '暗黒道化師'], 属性: ['闇'], 戦法: ['魔法', '黒魔法'], 所属: ['-'], 国家: ['トラベラー'] } },
+  { id: 'yocchi', name: 'ヨッチ', tags: { 種族: ['吸血鬼'], 役職: ['道化師'], 属性: ['闇', '風'], 戦法: ['魔法', '黒魔法'], 所属: ['勇者', '古代勇者'], 国家: ['トラベラー'] } },
+  { id: 'mahhi', name: 'マッヒー', tags: { 種族: ['人間'], 役職: ['狂戦士', 'トレジャーハンター'], 属性: ['火', '風'], 戦法: ['物理', '魔法'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'] } },
+  { id: 'kyoka', name: 'キョーカ・サンタボ', tags: { 種族: ['人間'], 役職: ['トレジャーハンター'], 属性: ['火'], 戦法: ['魔法', '強化魔法'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'] } },
+  { id: 'barg', name: 'バーグ・ダイジン', tags: { 種族: ['人間'], 役職: ['トレジャーハンター'], 属性: ['火'], 戦法: ['魔法', '物理'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'] } },
+  { id: 'nikuman', name: '肉まん', tags: { 種族: ['式神'], 役職: ['使い魔'], 属性: ['火'], 戦法: ['魔法'], 所属: ['デコイパーティ'], 国家: ['バネッサ'] } }
+];
+
+const specialRoles = [
+  { ids: ['alice', 'decoy'], name: 'トリアタマと遅刻女' },
+  { ids: ['frappe', 'matsuharu'], name: 'ベテラン漫才師？' },
+  { ids: ['barg', 'kyoka', 'luna'], name: '燃えフン暴走族' },
+  { ids: ['kinako', 'lily'], name: '払えるか馬鹿者が！' }
+];
+
+const tagScores = {};
+const tagCategoryMap = {};
+const tagCounts = {};
+const totalChars = characters.length;
+
+characters.forEach(char => {
+  for (let category in char.tags) {
+    char.tags[category].forEach(tag => {
+      if (tag === '-') return;
+      if (!tagCounts[tag]) tagCounts[tag] = 0;
+      tagCounts[tag]++;
+      tagCategoryMap[tag] = category; 
+    });
+  }
+});
+
+for (let tag in tagCounts) {
+  tagScores[tag] = Math.round(Math.pow(totalChars / tagCounts[tag], 2));
+}
+
+const lengthBonus = { 2: 2, 3: 4, 4: 7, 5: 12 };
+
+function getRoleName(category, tag) {
+  switch (category) {
+    case '種族': return `${tag}の系譜`;
+    case '役職': return `${tag}ギルド`;
+    case '属性': return `${tag}の加護を受けし者`;
+    case '戦法': return `${tag}使いの集い`;
+    case '所属': return `${tag}の一員`;
+    case '国家': return `${tag}同盟`;
+    default: return `${tag}`;
+  }
+}
+
+let playerHand = [];
+let cpuHand = [];
+let selectedIndices = [];
+let gameActive = false;
+let isResolvingClash = false;
+let currentDifficulty = 'EASY';
+
+const maxHP = 1000;
+let currentEnemyHP = maxHP;
+let currentPlayerHP = maxHP;
+
+let activeCpuBattalion = null;
+let activeCpuAnimation = null;
+let cpuLoopId = null;
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+function triggerShake() {
+  const layout = document.getElementById('game-layout');
+  layout.classList.remove('shake-effect');
+  void layout.offsetWidth;
+  layout.classList.add('shake-effect');
+}
+
+window.onload = () => {
+  createParticles();
+  document.getElementById('tutorial-modal').classList.add('active');
+};
+
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal && modal.id !== 'difficulty-modal' && modal.id !== 'pause-modal' && modal.id !== 'result-modal') {
+      modal.classList.remove('active');
+    }
+  });
+});
+
+document.getElementById('update-info-btn').addEventListener('click', () => {
+  document.getElementById('update-info-modal').classList.add('active');
+});
+
+document.getElementById('role-list-btn').addEventListener('click', () => {
+  const container = document.getElementById('role-list-content');
+  container.innerHTML = '';
+  const categories = ['種族', '役職', '属性', '戦法', '所属', '国家'];
+  categories.forEach(cat => {
+    let html = `<h3>${cat}</h3><ul>`;
+    for(let tag in tagCategoryMap) {
+      if (tagCategoryMap[tag] === cat && tagCounts[tag] >= 2) {
+         html += `<li>${getRoleName(cat, tag)} (基礎: ${tagScores[tag]})</li>`;
+      }
+    }
+    html += `</ul>`;
+    container.innerHTML += html;
+  });
+  document.getElementById('role-list-modal').classList.add('active');
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('difficulty-modal').classList.add('active');
+});
+
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    currentDifficulty = e.currentTarget.getAttribute('data-diff');
+    document.getElementById('difficulty-modal').classList.remove('active');
+    document.getElementById('home-screen').style.display = 'none';
+    document.getElementById('game-layout').style.display = 'flex';
+    initGame();
+  });
+});
+
+document.getElementById('menu-btn').addEventListener('click', () => {
+  if(!gameActive || isResolvingClash) return;
+  if(activeCpuAnimation) activeCpuAnimation.pause();
+  document.getElementById('pause-modal').classList.add('active');
+});
+
+document.getElementById('resume-btn').addEventListener('click', () => {
+  document.getElementById('pause-modal').classList.remove('active');
+  if(activeCpuAnimation) activeCpuAnimation.play();
+});
+
+document.getElementById('quit-btn').addEventListener('click', () => {
+  document.getElementById('pause-modal').classList.remove('active');
+  abortGame();
+});
+
+document.getElementById('rematch-btn').addEventListener('click', () => {
+  document.getElementById('result-modal').classList.remove('active');
+  initGame();
+});
+
+document.getElementById('result-home-btn').addEventListener('click', () => {
+  document.getElementById('result-modal').classList.remove('active');
+  document.getElementById('game-layout').style.display = 'none';
+  document.getElementById('home-screen').style.display = 'flex';
+});
+
+function initGame() {
+  currentEnemyHP = maxHP;
+  currentPlayerHP = maxHP;
+  updateHPUIs();
+  
+  if(activeCpuBattalion) { activeCpuBattalion.element.remove(); activeCpuBattalion = null; }
+  if(activeCpuAnimation) { activeCpuAnimation.cancel(); activeCpuAnimation = null; }
+  
+  playerHand = drawCards(5, []);
+  cpuHand = drawCards(5, []);
+  
+  renderPlayerHand(0);
+  renderCpuHand(0);
+  
+  gameActive = true;
+  isResolvingClash = false;
+  document.getElementById('action-btn').disabled = false;
+  
+  startCpuLoop();
+}
+
+function abortGame() {
+  gameActive = false;
+  clearInterval(cpuLoopId);
+  if(activeCpuBattalion) { activeCpuBattalion.element.remove(); activeCpuBattalion = null; }
+  if(activeCpuAnimation) { activeCpuAnimation.cancel(); activeCpuAnimation = null; }
+  document.getElementById('game-layout').style.display = 'none';
+  document.getElementById('home-screen').style.display = 'flex';
+}
+
+function drawCards(num, excludeIds) {
+  let drawn = [];
+  let available = characters.filter(c => !excludeIds.includes(c.id));
+  for (let i = 0; i < num; i++) {
+    if (available.length === 0) available = [...characters];
+    let idx = Math.floor(Math.random() * available.length);
+    drawn.push(available.splice(idx, 1)[0]);
+  }
+  return drawn;
+}
+
+function updateHPUIs() {
+  const displayEnemyHP = Math.max(0, currentEnemyHP);
+  const displayPlayerHP = Math.max(0, currentPlayerHP);
+
+  document.getElementById('enemy-hp-fill').style.height = `${(displayEnemyHP / maxHP) * 100}%`;
+  document.getElementById('enemy-hp-text').innerText = displayEnemyHP;
+  document.getElementById('player-hp-fill').style.height = `${(displayPlayerHP / maxHP) * 100}%`;
+  document.getElementById('player-hp-text').innerText = displayPlayerHP;
+}
+
+async function showEventMessage(text, color = 'var(--gold)') {
+  const msgEl = document.getElementById('event-message');
+  msgEl.innerText = text; msgEl.style.color = color; msgEl.style.opacity = 1;
+  await sleep(1500); msgEl.style.opacity = 0;
+}
+
+function renderPlayerHand(refillCount) {
+  const container = document.getElementById('player-hand-container');
+  container.innerHTML = '';
+  playerHand.forEach((char, index) => {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'card player-card';
+    if (selectedIndices.includes(index)) cardEl.classList.add('selected');
+    if (refillCount > 0) {
+      if (index < playerHand.length - refillCount) cardEl.classList.add('pack-left');
+      else cardEl.classList.add('slide-in-right-player');
+    }
+    cardEl.addEventListener('animationend', () => cardEl.classList.remove('pack-left', 'slide-in-right-player'));
+    
+    cardEl.innerHTML = `<img src="${char.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'"><div class="card-name">${char.name}</div>`;
+    cardEl.addEventListener('click', () => { if (!isResolvingClash && gameActive) toggleSelection(index, cardEl); });
+    container.appendChild(cardEl);
+  });
+}
+
+function renderCpuHand(refillCount) {
+  const container = document.getElementById('enemy-hand-container');
+  container.innerHTML = '';
+  cpuHand.forEach((char, index) => {
+    const cardEl = document.createElement('div');
+    cardEl.className = 'card enemy-card';
+    if (refillCount > 0) {
+      if (index < refillCount) cardEl.classList.add('slide-in-left-enemy');
+      else cardEl.classList.add('pack-right');
+    }
+    cardEl.addEventListener('animationend', () => cardEl.classList.remove('pack-right', 'slide-in-left-enemy'));
+    cardEl.innerHTML = `<img src="${char.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'">`;
+    container.appendChild(cardEl);
+  });
+}
+
+function toggleSelection(index, element) {
+  const selectedPos = selectedIndices.indexOf(index);
+  if (selectedPos > -1) {
+    selectedIndices.splice(selectedPos, 1); element.classList.remove('selected');
+  } else if (selectedIndices.length < 5) {
+    selectedIndices.push(index); element.classList.add('selected');
+  }
+}
+
+function detectRoles(selectedCards) {
+  let detected = [];
+  const sortedIds = selectedCards.map(c => c.id).sort().join(',');
+  specialRoles.forEach(sr => {
+    if (sr.ids.slice().sort().join(',') === sortedIds) {
+      detected.push({ tag: sr.name, category: '特殊役', roleName: sr.name, score: sr.ids.length * 50, isSpecial: true });
+    }
+  });
+
+  let commonTags = [];
+  let firstCardTags = [];
+  for (let category in selectedCards[0].tags) {
+    selectedCards[0].tags[category].forEach(tag => { if (tag !== '-') firstCardTags.push(tag); });
+  }
+  firstCardTags.forEach(tag => {
+    if (selectedCards.every(card => Object.values(card.tags).flat().includes(tag))) commonTags.push(tag);
+  });
+
+  let mult = lengthBonus[selectedCards.length] || 1;
+  commonTags.forEach(tag => {
+    let cat = tagCategoryMap[tag];
+    detected.push({ tag: tag, category: cat, roleName: getRoleName(cat, tag), score: tagScores[tag] * mult, isSpecial: false });
+  });
+
+  return detected;
+}
+
+function getBestCpuMove() {
+  let bestScore = -1; let bestMove = null;
+  for(let i=1; i<32; i++){
+    let combo = []; let indices = [];
+    for(let j=0; j<5; j++) { if ((i & (1<<j))) { combo.push(cpuHand[j]); indices.push(j); } }
+    if (combo.length >= 2) {
+      let roles = detectRoles(combo);
+      if (roles.length > 0) {
+        let score = roles.reduce((sum, r) => sum + r.score, 0);
+        if (score > bestScore) { bestScore = score; bestMove = { cards: combo, roles: roles, indices: indices, score: score }; }
+      }
+    }
+  }
+  return bestMove;
+}
+
+function getNormalCpuMove() {
+  let bestMove = { score: -1 };
+  for(let i=0; i<5; i++) {
+    let indices = []; let pickCount = Math.random() > 0.5 ? 2 : 3;
+    while(indices.length < pickCount) {
+      let r = Math.floor(Math.random() * cpuHand.length); if(!indices.includes(r)) indices.push(r);
+    }
+    let combo = indices.map(idx => cpuHand[idx]); let roles = detectRoles(combo);
+    if(roles.length > 0) {
+      let score = roles.reduce((sum, r) => sum + r.score, 0);
+      if(score > bestMove.score) bestMove = { cards: combo, roles: roles, indices: indices, score: score };
+    }
+  }
+  return bestMove.score > -1 ? bestMove : null;
+}
+
+function getEasyCpuMove() {
+  let indices = []; let pickCount = Math.random() > 0.5 ? 2 : 3;
+  while(indices.length < pickCount) {
+    let r = Math.floor(Math.random() * cpuHand.length); if(!indices.includes(r)) indices.push(r);
+  }
+  let combo = indices.map(idx => cpuHand[idx]); let roles = detectRoles(combo);
+  if(roles.length > 0) return { cards: combo, roles: roles, indices: indices };
+  return null;
+}
+
+function startCpuLoop() {
+  cpuLoopId = setInterval(() => {
+    if (!gameActive || isResolvingClash || activeCpuBattalion || document.getElementById('pause-modal').classList.contains('active')) return;
+    let move = currentDifficulty === 'HARD' ? getBestCpuMove() : currentDifficulty === 'NORMAL' ? getNormalCpuMove() : getEasyCpuMove();
+    if (move && move.roles && move.roles.length > 0) launchCpuAttack(move.cards, move.roles, move.indices);
+    else { cpuHand[0] = drawCards(1, [])[0]; renderCpuHand(0); }
+  }, 3500); 
+}
+
+function launchCpuAttack(cards, roles, indices) {
+  indices.sort((a,b)=>b-a).forEach(i => cpuHand.splice(i, 1)); renderCpuHand(0);
+  const battleArea = document.getElementById('battle-area');
+  const battalionEl = document.createElement('div'); battalionEl.className = 'battalion';
+  
+  const startY = -80; battalionEl.style.transform = `translateY(${startY}px)`;
+  cards.forEach(c => {
+    const cardEl = document.createElement('div'); cardEl.className = 'card enemy-card';
+    cardEl.innerHTML = `<img src="${c.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'">`;
+    battalionEl.appendChild(cardEl);
+  });
+  battleArea.appendChild(battalionEl);
+
+  let totalScore = roles.reduce((sum, r) => sum + r.score, 0);
+  activeCpuBattalion = { element: battalionEl, cards: cards, roles: roles, score: totalScore };
+  let travelDuration = currentDifficulty === 'HARD' ? 15000 : 18000;
+  
+  setTimeout(() => {
+    if (!activeCpuBattalion) return;
+    const targetY = battleArea.clientHeight - battalionEl.clientHeight;
+    activeCpuAnimation = battalionEl.animate([
+      { transform: `translateY(${startY}px)`, offset: 0 },
+      { transform: `translateY(10px)`, offset: 0.05, easing: 'ease-out' },
+      { transform: `translateY(10px)`, offset: 0.1, easing: 'linear' },
+      { transform: `translateY(${targetY}px)`, offset: 1 }
+    ], { duration: travelDuration, fill: 'forwards' });
+
+    activeCpuAnimation.onfinish = () => {
+      if (activeCpuBattalion && activeCpuBattalion.element === battalionEl && !isResolvingClash) {
+        battalionEl.remove(); let dmgScore = activeCpuBattalion.score;
+        activeCpuBattalion = null; activeCpuAnimation = null;
+        refillCpuHand(cards.length); takePlayerDamage(dmgScore);
+      }
+    };
+  }, 50);
+}
+
+function takePlayerDamage(damage) {
+  currentPlayerHP -= damage; updateHPUIs(); triggerShake();
+  if (currentPlayerHP <= 0) gameOver(false); else showEventMessage(`被弾！ ${damage} のダメージ！`, '#ff4d4d');
+}
+
+function refillCpuHand(count) {
+  let newCards = drawCards(count, cpuHand.map(c=>c.id));
+  cpuHand.unshift(...newCards); renderCpuHand(count);
+}
+
+document.getElementById('action-btn').addEventListener('click', async () => {
+  if (isResolvingClash || !gameActive) return;
+  if (selectedIndices.length < 2) { alert('役を作るには2枚以上選択してください。'); return; }
+
+  const selectedCards = selectedIndices.map(index => playerHand[index]);
+  const playerRoles = detectRoles(selectedCards);
+  if (playerRoles.length === 0) { alert('選択した全員に共通する役がありません！'); return; }
+
+  isResolvingClash = true; document.getElementById('action-btn').disabled = true;
+  if(activeCpuAnimation) activeCpuAnimation.pause();
+
+  let currentSelectedCount = selectedIndices.length;
+  selectedIndices.sort((a,b)=>b-a).forEach(i => playerHand.splice(i, 1));
+  renderPlayerHand(0);
+
+  let playerTotalScore = playerRoles.reduce((sum, r) => sum + r.score, 0);
+  const battleArea = document.getElementById('battle-area');
+  const playerBattalionEl = document.createElement('div'); playerBattalionEl.className = 'battalion';
+  playerBattalionEl.style.transform = `translateY(${battleArea.clientHeight}px)`;
+  
+  selectedCards.forEach(c => {
+    const cardEl = document.createElement('div'); cardEl.className = 'card';
+    cardEl.innerHTML = `<img src="${c.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'">`;
+    playerBattalionEl.appendChild(cardEl);
+  });
+  battleArea.appendChild(playerBattalionEl);
+
+  if (activeCpuBattalion) {
+    let enemyBat = activeCpuBattalion; activeCpuBattalion = null; activeCpuAnimation = null;
+    const enemyY = enemyBat.element.getBoundingClientRect().top - battleArea.getBoundingClientRect().top;
+    const overlapOffset = playerBattalionEl.clientHeight * 0.15;
+    const targetY = (enemyY + enemyBat.element.clientHeight) - overlapOffset;
+    
+    playerBattalionEl.animate([
+      { transform: `translateY(${battleArea.clientHeight}px)` }, { transform: `translateY(${targetY}px)` }
+    ], { duration: 400, easing: 'ease-out', fill: 'forwards' });
+    
+    await sleep(450); triggerShake(); 
+    await playChainCutins(selectedCards, playerRoles, 'player');
+    await playChainCutins(enemyBat.cards, enemyBat.roles, 'enemy');
+
+    let diff = playerTotalScore - enemyBat.score;
+    enemyBat.element.remove(); playerBattalionEl.remove();
+
+    if (diff > 0) { showEventMessage(`激突勝利！ ${playerTotalScore} ダメージ！`, '#d4af37'); dealDamageToEnemy(playerTotalScore); }
+    else if (diff < 0) { showEventMessage(`激突敗北… ${enemyBat.score} ダメージ！`, '#ff4d4d'); currentPlayerHP -= enemyBat.score; updateHPUIs(); triggerShake(); if (currentPlayerHP <= 0) gameOver(false); }
+    else showEventMessage('相殺！', '#aaaaaa');
+    
+    if(gameActive) refillCpuHand(enemyBat.cards.length);
+  } else {
+    const targetY = -playerBattalionEl.clientHeight;
+    const playerAnim = playerBattalionEl.animate([
+      { transform: `translateY(${battleArea.clientHeight}px)` }, { transform: `translateY(${targetY}px)` }
+    ], { duration: 600, easing: 'ease-out', fill: 'forwards' });
+    
+    await sleep(350); playerAnim.pause();
+    await playChainCutins(selectedCards, playerRoles, 'player');
+    playerAnim.play();
+    
+    await sleep(300); playerBattalionEl.remove();
+    showEventMessage(`ダイレクトアタック！ ${playerTotalScore} ダメージ！`, '#d4af37'); dealDamageToEnemy(playerTotalScore);
+  }
+
+  if (gameActive) {
+    if (cpuHand.length < 5) refillCpuHand(5 - cpuHand.length);
+    let newCards = drawCards(currentSelectedCount, playerHand.map(c=>c.id));
+    playerHand.push(...newCards); selectedIndices = [];
+    renderPlayerHand(currentSelectedCount); 
+    document.getElementById('action-btn').disabled = false; isResolvingClash = false;
+  }
+});
+
+function dealDamageToEnemy(damage) {
+  currentEnemyHP -= damage; updateHPUIs(); triggerShake();
+  if (currentEnemyHP <= 0) gameOver(true);
+}
+
+async function playChainCutins(cards, roles, type) {
+  const overlay = document.getElementById('cutin-overlay');
+  const panelContainer = document.getElementById('cutin-panel-container');
+  const textContainerWrap = document.getElementById('cutin-text-wrap');
+
+  panelContainer.innerHTML = '<div class="cutin-glare"></div>'; 
+  cards.forEach(char => {
+    const slice = document.createElement('div'); slice.className = 'cutin-slice';
+    const img = document.createElement('img'); img.src = `${char.id}.png`; img.onerror = function() { this.src=''; this.style.backgroundColor='#2d3748'; };
+    slice.appendChild(img); panelContainer.appendChild(slice);
+  });
+
+  for (let role of roles) {
+    overlay.className = type === 'player' ? 'player active' : 'enemy active';
+    if (role.isSpecial) overlay.classList.add('special');
+
+    textContainerWrap.innerHTML = ''; 
+    const textInner = document.createElement('div');
+    textInner.className = 'cutin-text-inner slam-animation'; 
+    
+    const textMain = document.createElement('div'); textMain.className = 'cutin-text-main'; textMain.innerText = `${role.roleName}`;
+    const textScore = document.createElement('div'); textScore.className = 'cutin-text-score'; textScore.innerText = `＋${role.score}`;
+    
+    textInner.appendChild(textMain); textInner.appendChild(textScore); textContainerWrap.appendChild(textInner);
+
+    triggerShake(); 
+    await sleep(900);
+  }
+
+  overlay.className = ''; textContainerWrap.innerHTML = '';
+  await sleep(300);
+}
+
+function gameOver(isWin) {
+  gameActive = false; clearInterval(cpuLoopId);
+  if (activeCpuBattalion) { activeCpuBattalion.element.remove(); activeCpuBattalion = null; }
+  if (activeCpuAnimation) { activeCpuAnimation.cancel(); activeCpuAnimation = null; }
+  
+  setTimeout(() => {
+    const title = document.getElementById('result-title'); const desc = document.getElementById('result-desc');
+    if(isWin) { title.innerText = '勝利！'; title.style.color = '#e6cb82'; desc.innerText = '敵陣を突破しました！'; }
+    else { title.innerText = '敗北…'; title.style.color = '#ff4d4d'; desc.innerText = 'HPが0になりました。'; }
+    document.getElementById('result-modal').classList.add('active');
+    document.getElementById('action-btn').disabled = false; isResolvingClash = false;
+  }, 500);
+}
+
+</script>
+</body>
+</html>
