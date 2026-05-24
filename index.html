@@ -24,7 +24,9 @@
     font-family: 'Noto Sans JP', sans-serif;
     display: flex;
     flex-direction: column;
+    /* スマホのアドレスバー対策として dvh を使用 */
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     position: relative;
   }
@@ -41,18 +43,30 @@
     background-color: var(--gold);
     border-radius: 50%;
     opacity: 0;
-    bottom: -10px;
-    animation: floatUp linear infinite;
+    bottom: -50px;
+    animation: floatUp linear forwards;
     box-shadow: 0 0 6px var(--gold);
   }
+  
+  /* 魂のパーティクル（クリック可能） */
+  .soul-particle {
+    pointer-events: auto;
+    cursor: pointer;
+    z-index: 150;
+  }
+  .soul-particle:hover {
+    transform: scale(1.2);
+    transition: transform 0.2s;
+  }
+
   @keyframes floatUp {
     0% { transform: translateY(0) scale(0.5); opacity: 0; }
     20% { opacity: 0.6; }
     80% { opacity: 0.6; }
-    100% { transform: translateY(-100vh) scale(1.2); opacity: 0; }
+    100% { transform: translateY(-110vh) scale(1.2); opacity: 0; }
   }
 
-  /* モーダル（アニメーション付き） */
+  /* モーダル */
   .modal {
     visibility: hidden;
     opacity: 0;
@@ -76,15 +90,16 @@
     border: 2px solid var(--gold);
     padding: 30px;
     border-radius: 12px;
-    max-width: 85%;
+    width: 85%;
+    max-width: 600px;
     max-height: 80vh;
     overflow-y: auto;
     color: var(--text-main);
     line-height: 1.6;
     box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(230,203,130,0.1);
-    /* ポップアップのアニメーション（バウンスをなくし、フワッとスケールするイージングに） */
     transform: scale(0.9) translateY(20px);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+    box-sizing: border-box;
   }
   .modal.active .modal-content {
     transform: scale(1) translateY(0);
@@ -136,6 +151,7 @@
     width: 260px;
     box-shadow: 0 6px 12px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.1);
     position: relative;
+    box-sizing: border-box;
   }
   .home-btn::after, #action-btn::after {
     content: ''; position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px;
@@ -152,9 +168,8 @@
     border-color: #444; color: #666; background: #111; box-shadow: none; cursor: not-allowed; transform: none;
   }
   #action-btn:disabled::after { border-color: transparent; }
-  .diff-btn { font-size: 1.3rem; }
 
-  /* 画面揺れアニメーション（揺れ幅を小さく調整） */
+  /* 画面揺れアニメーション */
   @keyframes screenShake {
     0% { transform: translate(0.5px, 0.5px) rotate(0deg); }
     20% { transform: translate(-1.5px, 0px) rotate(0.5deg); }
@@ -227,7 +242,7 @@
   .card {
     width: 14vw; max-width: 60px; height: 21vw; max-height: 90px; background-color: var(--card-bg);
     border: 1px solid var(--gold-dim); border-radius: 4px; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; position: relative; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+    align-items: center; justify-content: center; position: relative; overflow: hidden; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.6);
   }
   .card img { width: 100%; height: 100%; object-fit: cover; }
   .card-name {
@@ -288,12 +303,10 @@
   #cutin-overlay.enemy .cutin-slice { border-color: #ff4d4d; }
   #cutin-overlay.special .cutin-slice { border-color: #d8bfd8; box-shadow: 0 0 15px rgba(216, 191, 216, 0.4); }
 
-  /* ズーム（ケンバーンズ効果） */
   .cutin-slice img { width: 100%; height: 100%; object-fit: cover; object-position: center; transform: skewX(15deg) scale(1.2); }
   #cutin-overlay.active .cutin-slice img { animation: imgZoom 1.5s ease-out forwards; }
   @keyframes imgZoom { 0% { transform: skewX(15deg) scale(1.2); } 100% { transform: skewX(15deg) scale(1.35); } }
 
-  /* 光の反射（グレア）の移動距離を伸ばす */
   .cutin-glare {
     position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
@@ -310,7 +323,6 @@
   #cutin-overlay.enemy .cutin-text-inner { border-color: #ff4d4d; }
   #cutin-overlay.special .cutin-text-inner { border-color: #d8bfd8; background: rgba(0, 0, 0, 0.85); box-shadow: 0 0 15px rgba(216, 191, 216, 0.5); }
 
-  /* スラムアニメーション */
   .slam-animation { animation: textSlam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards; }
   @keyframes textSlam {
     0% { transform: translateX(100px) scale(1.2) skewX(-10deg); opacity: 0; }
@@ -324,46 +336,65 @@
   #cutin-overlay.special .cutin-text-main { color: #f8f8ff; text-shadow: 0 0 10px #da70d6, 0 0 20px #da70d6; }
   .cutin-text-score { font-family: 'Oswald', sans-serif; font-size: 1.5rem; color: #fff; margin-top: 5px; letter-spacing: 1px; }
 
-  /* スマホ向けのレスポンシブ対応 */
+  /* スマホ・タブレット用レスポンシブデザイン */
   @media (max-width: 600px) {
     #home-title {
       font-size: 1.8rem;
       margin-bottom: 30px;
     }
     .home-btn, #action-btn {
-      width: 80%;
+      width: 85%;
       max-width: 260px;
       font-size: 1.1rem;
       padding: 10px 20px;
+    }
+    #action-btn {
+      margin-bottom: 5px; /* 下にはみ出ないよう調整 */
     }
     #start-btn {
       font-size: 1.2rem;
     }
     .modal-content {
-      max-height: 60vh; /* 縦幅を小さくして画面外をタップしやすく */
-      padding: 20px;
+      width: 92%;
+      max-width: none;
+      padding: 20px 15px;
+      max-height: 70vh; /* 画面外タップしやすく */
     }
-    .modal-content h2 {
-      font-size: 1.3rem;
+    .diff-btn {
+      width: 100%;
+      white-space: nowrap; /* 改行防止 */
     }
     #cutin-text-wrap {
-      bottom: 5%; /* イラストの下部に配置 */
+      bottom: 5%; /* テキストをイラスト下に */
       right: 5%;
     }
     .cutin-text-main {
-      font-size: 1.2rem;
+      font-size: 1.3rem;
     }
     .cutin-text-score {
-      font-size: 1rem;
+      font-size: 1.1rem;
     }
     .cutin-text-inner {
       padding: 8px 20px;
     }
     .sidebar-hp {
-      width: 30px; /* 少し細くする */
+      width: 32px;
+    }
+    .card {
+      width: 15vw;
+      height: 22.5vw;
+    }
+    .player-card {
+      max-width: 60px;
+      max-height: 90px;
+    }
+    #player-area {
+      min-height: 15vh;
+    }
+    #enemy-area {
+      min-height: 10vh;
     }
   }
-
 </style>
 </head>
 <body>
@@ -381,10 +412,11 @@
     <div class="modal-content">
       <h2>ZMTQ Cross Connect へようこそ</h2>
       <p>手札のキャラクターから共通する特徴（タグ）を持つカードを2枚以上選んで「進撃」してください。</p>
+      <p style="color: var(--gold); font-weight: bold;">誰がどんな特徴を持っているか、ZMTQをよく読んで覚えるのが勝利のコツ！</p>
       <p>役の強さと枚数に応じて攻撃力が計算され、敵陣へ進軍します。</p>
-      <p>敵もリアルタイムで役を作って進撃してきます。<br>敵のカードが自陣（画面下の境界線）に到達する前に進撃し、盤面で迎撃しましょう！</p>
-      <p>激突した場合は、より強い役を作った側の攻撃が相手にダメージを与えます。</p>
-      <p style="text-align:center; margin-top:20px; color:var(--gold); font-size:0.9rem;">※画面外をクリックして閉じます</p>
+      <p>敵もリアルタイムで役を作って進撃してきます。<br>敵のカードが自陣（画面下の境界線）に到達する前に進撃し、盤面で迎撃しましょう！激突した場合は、より強い役を作った側の攻撃が相手にダメージを与えます。</p>
+      <p>物語が進むにつれてキャラクターが増えるだけでなく、役の強さも変わっていきます。更新があったら「役一覧」で都度チェックしましょう！</p>
+      <p style="text-align:center; margin-top:20px; color:var(--gold-dim); font-size:0.9rem;">※画面外をクリックして閉じます</p>
     </div>
   </div>
 
@@ -415,6 +447,13 @@
     </div>
   </div>
 
+  <div id="soul-modal" class="modal">
+    <div class="modal-content" style="text-align:center;">
+      <h2 style="border:none;">魂の共鳴</h2>
+      <p style="font-size: 1.2rem;">この色は… <span id="soul-name" style="font-weight:bold; font-size:1.5rem;"></span> の魂だ</p>
+    </div>
+  </div>
+
   <div id="pause-modal" class="modal">
     <div class="modal-content" style="text-align:center;">
       <h2>ポーズメニュー</h2>
@@ -434,11 +473,13 @@
 
   <div id="game-layout">
     <div id="menu-btn">≡</div>
+    
     <div class="sidebar-hp">
       <div class="hp-label">敵陣</div>
       <div class="hp-value" id="enemy-hp-text">1000</div>
       <div class="hp-bar-vert-wrap"><div id="enemy-hp-fill"></div></div>
     </div>
+
     <div id="center-column">
       <div id="enemy-area"><div id="enemy-hand-container"></div></div>
       <div id="battle-area">
@@ -454,6 +495,7 @@
         <button id="action-btn">進撃</button>
       </div>
     </div>
+
     <div class="sidebar-hp">
       <div class="hp-label">自陣</div>
       <div class="hp-value" id="player-hp-text">1000</div>
@@ -462,22 +504,90 @@
   </div>
 
 <script>
+// --- 通常のパーティクル生成 ---
+let particleIntervalId;
 function createParticles() {
   const container = document.getElementById('particles');
   if(!container) return;
-  for(let i=0; i<40; i++) {
+  particleIntervalId = setInterval(() => {
     const p = document.createElement('div');
     p.className = 'particle';
     p.style.left = Math.random() * 100 + 'vw';
     p.style.animationDuration = (Math.random() * 8 + 6) + 's';
-    p.style.animationDelay = (Math.random() * 5) + 's';
     const size = Math.random() * 3 + 1;
     p.style.width = size + 'px';
     p.style.height = size + 'px';
+    p.addEventListener('animationend', () => p.remove());
     container.appendChild(p);
-  }
+  }, 400);
 }
 
+// --- 魂のパーティクル生成（ギミック） ---
+const normalSouls = [
+  { name: 'フラッペ', color: '#5080E7' },
+  { name: 'マツハル', color: '#4AB2AD' },
+  { name: 'デコイ', color: '#FD7249' },
+  { name: '心結', color: '#EEBBCB' },
+  { name: 'ルナ', color: '#A590E5' },
+  { name: 'アリス', color: '#62D8ED' }
+];
+const rareSoul = { name: '闇の古代勇者', color: '#928E9E' };
+
+let soulIntervalNormal;
+let soulIntervalRare;
+
+function startSoulParticles() {
+  const container = document.getElementById('particles');
+  
+  soulIntervalNormal = setInterval(() => {
+    if (gameActive) return; // 対戦中は出ない
+    spawnSoulParticle(container, 'normal');
+  }, 10000); // 10秒ごと
+
+  soulIntervalRare = setInterval(() => {
+    if (gameActive) return;
+    spawnSoulParticle(container, 'rare');
+  }, 60000); // 1分ごと
+}
+
+function spawnSoulParticle(container, type) {
+  const p = document.createElement('div');
+  p.className = 'particle soul-particle';
+  
+  let soul;
+  if (type === 'normal') {
+    soul = normalSouls[Math.floor(Math.random() * normalSouls.length)];
+    const size = Math.random() * 5 + 8; // 通常より少し大きめ
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+  } else {
+    soul = rareSoul;
+    const size = Math.random() * 8 + 15; // さらに大きめ
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+  }
+
+  p.style.backgroundColor = soul.color;
+  p.style.boxShadow = `0 0 10px ${soul.color}, 0 0 20px ${soul.color}`;
+  p.style.left = Math.random() * 80 + 10 + 'vw';
+  p.style.animationDuration = (Math.random() * 4 + 6) + 's';
+  
+  p.addEventListener('click', () => {
+    const modal = document.getElementById('soul-modal');
+    const nameSpan = document.getElementById('soul-name');
+    nameSpan.innerText = soul.name;
+    nameSpan.style.color = soul.color;
+    nameSpan.style.textShadow = `0 0 8px ${soul.color}`;
+    modal.classList.add('active');
+    p.remove();
+  });
+
+  p.addEventListener('animationend', () => p.remove());
+  container.appendChild(p);
+}
+
+
+// --- データ定義 ---
 const characters = [
   { id: 'frappe', name: 'フラッペ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法', '回復魔法', '結界魔法'], 所属: ['勇者', '現代勇者', 'フラッペパーティ'], 国家: ['バネッサ'] } },
   { id: 'matsuharu', name: 'マツハル', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['光'], 戦法: ['武器', '剣'], 所属: ['勇者', '現代勇者', 'マツハルパーティ'], 国家: ['-'] } },
@@ -565,9 +675,16 @@ function triggerShake() {
   layout.classList.add('shake-effect');
 }
 
+// --- 初期化 ---
 window.onload = () => {
   createParticles();
-  document.getElementById('tutorial-modal').classList.add('active');
+  startSoulParticles();
+  
+  // 初回のみチュートリアルを表示する
+  if (!localStorage.getItem('zmtq_tutorial_shown')) {
+    document.getElementById('tutorial-modal').classList.add('active');
+    localStorage.setItem('zmtq_tutorial_shown', 'true');
+  }
 };
 
 document.querySelectorAll('.modal').forEach(modal => {
@@ -589,6 +706,7 @@ document.getElementById('role-list-btn').addEventListener('click', () => {
   categories.forEach(cat => {
     let html = `<h3>${cat}</h3><ul>`;
     for(let tag in tagCategoryMap) {
+      // 役として成立不可能なもの（所持者1人）は非表示
       if (tagCategoryMap[tag] === cat && tagCounts[tag] >= 2) {
          html += `<li>${getRoleName(cat, tag)} (基礎: ${tagScores[tag]})</li>`;
       }
@@ -640,6 +758,7 @@ document.getElementById('result-home-btn').addEventListener('click', () => {
   document.getElementById('home-screen').style.display = 'flex';
 });
 
+// --- ゲーム進行・ドロー重複防止処理 ---
 function initGame() {
   currentEnemyHP = maxHP;
   currentPlayerHP = maxHP;
@@ -648,8 +767,10 @@ function initGame() {
   if(activeCpuBattalion) { activeCpuBattalion.element.remove(); activeCpuBattalion = null; }
   if(activeCpuAnimation) { activeCpuAnimation.cancel(); activeCpuAnimation = null; }
   
-  playerHand = drawCards(5, []);
-  cpuHand = drawCards(5, []);
+  let allIds = [];
+  playerHand = drawCards(5, allIds);
+  allIds.push(...playerHand.map(c=>c.id));
+  cpuHand = drawCards(5, allIds);
   
   renderPlayerHand(0);
   renderCpuHand(0);
@@ -672,11 +793,18 @@ function abortGame() {
 
 function drawCards(num, excludeIds) {
   let drawn = [];
-  let available = characters.filter(c => !excludeIds.includes(c.id));
+  let currentExcludes = [...excludeIds];
+  
   for (let i = 0; i < num; i++) {
-    if (available.length === 0) available = [...characters];
+    let available = characters.filter(c => !currentExcludes.includes(c.id));
+    if (available.length === 0) {
+      available = [...characters];
+      currentExcludes = [];
+    }
     let idx = Math.floor(Math.random() * available.length);
-    drawn.push(available.splice(idx, 1)[0]);
+    let card = available[idx];
+    drawn.push(card);
+    currentExcludes.push(card.id); // 連続ドロー内での重複も防ぐ
   }
   return drawn;
 }
@@ -815,7 +943,11 @@ function startCpuLoop() {
     if (!gameActive || isResolvingClash || activeCpuBattalion || document.getElementById('pause-modal').classList.contains('active')) return;
     let move = currentDifficulty === 'HARD' ? getBestCpuMove() : currentDifficulty === 'NORMAL' ? getNormalCpuMove() : getEasyCpuMove();
     if (move && move.roles && move.roles.length > 0) launchCpuAttack(move.cards, move.roles, move.indices);
-    else { cpuHand[0] = drawCards(1, [])[0]; renderCpuHand(0); }
+    else { 
+      let allIds = playerHand.map(c=>c.id).concat(cpuHand.map(c=>c.id));
+      cpuHand[0] = drawCards(1, allIds)[0]; 
+      renderCpuHand(0); 
+    }
   }, 3500); 
 }
 
@@ -824,7 +956,8 @@ function launchCpuAttack(cards, roles, indices) {
   const battleArea = document.getElementById('battle-area');
   const battalionEl = document.createElement('div'); battalionEl.className = 'battalion';
   
-  const startY = -80; battalionEl.style.transform = `translateY(${startY}px)`;
+  // スマホ対応：開始位置を修正
+  const startY = -60; battalionEl.style.transform = `translateY(${startY}px)`;
   cards.forEach(c => {
     const cardEl = document.createElement('div'); cardEl.className = 'card enemy-card';
     cardEl.innerHTML = `<img src="${c.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'">`;
@@ -839,6 +972,7 @@ function launchCpuAttack(cards, roles, indices) {
   setTimeout(() => {
     if (!activeCpuBattalion) return;
     const targetY = battleArea.clientHeight - battalionEl.clientHeight;
+    // シュッと出てきて止まり、じわじわ進軍
     activeCpuAnimation = battalionEl.animate([
       { transform: `translateY(${startY}px)`, offset: 0 },
       { transform: `translateY(10px)`, offset: 0.05, easing: 'ease-out' },
@@ -862,7 +996,8 @@ function takePlayerDamage(damage) {
 }
 
 function refillCpuHand(count) {
-  let newCards = drawCards(count, cpuHand.map(c=>c.id));
+  let allIds = playerHand.map(c=>c.id).concat(cpuHand.map(c=>c.id));
+  let newCards = drawCards(count, allIds);
   cpuHand.unshift(...newCards); renderCpuHand(count);
 }
 
@@ -931,7 +1066,8 @@ document.getElementById('action-btn').addEventListener('click', async () => {
 
   if (gameActive) {
     if (cpuHand.length < 5) refillCpuHand(5 - cpuHand.length);
-    let newCards = drawCards(currentSelectedCount, playerHand.map(c=>c.id));
+    let allIds = playerHand.map(c=>c.id).concat(cpuHand.map(c=>c.id));
+    let newCards = drawCards(currentSelectedCount, allIds);
     playerHand.push(...newCards); selectedIndices = [];
     renderPlayerHand(currentSelectedCount); 
     document.getElementById('action-btn').disabled = false; isResolvingClash = false;
