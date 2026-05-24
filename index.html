@@ -24,14 +24,13 @@
     font-family: 'Noto Sans JP', sans-serif;
     display: flex;
     flex-direction: column;
-    /* スマホのアドレスバー対策として dvh を使用 */
     height: 100vh;
     height: 100dvh;
     overflow: hidden;
     position: relative;
   }
 
-  /* 背景パーティクル */
+  /* 背景の通常パーティクル */
   #particles {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -47,16 +46,38 @@
     animation: floatUp linear forwards;
     box-shadow: 0 0 6px var(--gold);
   }
-  
-  /* 魂のパーティクル（クリック可能） */
-  .soul-particle {
-    pointer-events: auto;
-    cursor: pointer;
-    z-index: 150;
+
+  /* 魂のパーティクル専用の一番手前コンテナ */
+  #soul-particles {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; /* コンテナ自体はクリックを透過 */
+    z-index: 150; /* ホーム画面(100)より手前 */
   }
-  .soul-particle:hover {
-    transform: scale(1.2);
-    transition: transform 0.2s;
+
+  /* 当たり判定を広げたラッパー */
+  .soul-wrapper {
+    position: absolute;
+    bottom: -100px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto; /* ラッパー部分はクリック可能 */
+    cursor: pointer;
+    animation: floatUp linear forwards;
+  }
+
+  /* 光の粒本体 */
+  .soul-inner {
+    border-radius: 50%;
+    transition: transform 0.2s ease-out;
+  }
+
+  /* ホバー（タップ直前）で粒が少し大きくなる反応 */
+  .soul-wrapper:hover .soul-inner {
+    transform: scale(1.4);
   }
 
   @keyframes floatUp {
@@ -336,70 +357,30 @@
   #cutin-overlay.special .cutin-text-main { color: #f8f8ff; text-shadow: 0 0 10px #da70d6, 0 0 20px #da70d6; }
   .cutin-text-score { font-family: 'Oswald', sans-serif; font-size: 1.5rem; color: #fff; margin-top: 5px; letter-spacing: 1px; }
 
-  /* スマホ・タブレット用レスポンシブデザイン */
+  /* スマホ向けレイアウト調整 */
   @media (max-width: 600px) {
-    #home-title {
-      font-size: 1.8rem;
-      margin-bottom: 30px;
-    }
-    .home-btn, #action-btn {
-      width: 85%;
-      max-width: 260px;
-      font-size: 1.1rem;
-      padding: 10px 20px;
-    }
-    #action-btn {
-      margin-bottom: 5px; /* 下にはみ出ないよう調整 */
-    }
-    #start-btn {
-      font-size: 1.2rem;
-    }
-    .modal-content {
-      width: 92%;
-      max-width: none;
-      padding: 20px 15px;
-      max-height: 70vh; /* 画面外タップしやすく */
-    }
-    .diff-btn {
-      width: 100%;
-      white-space: nowrap; /* 改行防止 */
-    }
-    #cutin-text-wrap {
-      bottom: 5%; /* テキストをイラスト下に */
-      right: 5%;
-    }
-    .cutin-text-main {
-      font-size: 1.3rem;
-    }
-    .cutin-text-score {
-      font-size: 1.1rem;
-    }
-    .cutin-text-inner {
-      padding: 8px 20px;
-    }
-    .sidebar-hp {
-      width: 32px;
-    }
-    .card {
-      width: 15vw;
-      height: 22.5vw;
-    }
-    .player-card {
-      max-width: 60px;
-      max-height: 90px;
-    }
-    #player-area {
-      min-height: 15vh;
-    }
-    #enemy-area {
-      min-height: 10vh;
-    }
+    #home-title { font-size: 1.8rem; margin-bottom: 30px; }
+    .home-btn, #action-btn { width: 85%; max-width: 260px; font-size: 1.1rem; padding: 10px 20px; }
+    #action-btn { margin-bottom: 5px; }
+    #start-btn { font-size: 1.2rem; }
+    .modal-content { width: 92%; max-width: none; padding: 20px 15px; max-height: 70vh; }
+    .diff-btn { width: 100%; white-space: nowrap; }
+    #cutin-text-wrap { bottom: 5%; right: 5%; }
+    .cutin-text-main { font-size: 1.3rem; }
+    .cutin-text-score { font-size: 1.1rem; }
+    .cutin-text-inner { padding: 8px 20px; }
+    .sidebar-hp { width: 32px; }
+    .card { width: 15vw; height: 22.5vw; }
+    .player-card { max-width: 60px; max-height: 90px; }
+    #player-area { min-height: 15vh; }
+    #enemy-area { min-height: 10vh; }
   }
 </style>
 </head>
 <body>
 
   <div id="particles"></div>
+  <div id="soul-particles"></div>
 
   <div id="home-screen">
     <div id="home-title">ZMTQ Cross Connect</div>
@@ -412,7 +393,7 @@
     <div class="modal-content">
       <h2>ZMTQ Cross Connect へようこそ</h2>
       <p>手札のキャラクターから共通する特徴（タグ）を持つカードを2枚以上選んで「進撃」してください。</p>
-      <p style="color: var(--gold); font-weight: bold;">誰がどんな特徴を持っているか、ZMTQをよく読んで覚えるのが勝利のコツ！</p>
+      <p style="color: var(--gold);">誰がどんな特徴を持っているか、ZMTQをよく読んで覚えるのが勝利のコツ！</p>
       <p>役の強さと枚数に応じて攻撃力が計算され、敵陣へ進軍します。</p>
       <p>敵もリアルタイムで役を作って進撃してきます。<br>敵のカードが自陣（画面下の境界線）に到達する前に進撃し、盤面で迎撃しましょう！激突した場合は、より強い役を作った側の攻撃が相手にダメージを与えます。</p>
       <p>物語が進むにつれてキャラクターが増えるだけでなく、役の強さも変わっていきます。更新があったら「役一覧」で都度チェックしましょう！</p>
@@ -448,9 +429,9 @@
   </div>
 
   <div id="soul-modal" class="modal">
-    <div class="modal-content" style="text-align:center;">
+    <div class="modal-content" style="text-align:center; background: rgba(0,0,0,0.9); box-shadow: 0 0 30px rgba(230,203,130,0.3);">
       <h2 style="border:none;">魂の共鳴</h2>
-      <p style="font-size: 1.2rem;">この色は… <span id="soul-name" style="font-weight:bold; font-size:1.5rem;"></span> の魂だ</p>
+      <p style="font-size: 1.2rem;">この色は… <br><br><span id="soul-name" style="font-weight:bold; font-size:1.8rem; font-family:'Shippori Mincho', serif;"></span><br><br> の魂だ</p>
     </div>
   </div>
 
@@ -504,7 +485,7 @@
   </div>
 
 <script>
-// --- 通常のパーティクル生成 ---
+// --- 通常パーティクル生成 ---
 let particleIntervalId;
 function createParticles() {
   const container = document.getElementById('particles');
@@ -537,57 +518,61 @@ let soulIntervalNormal;
 let soulIntervalRare;
 
 function startSoulParticles() {
-  const container = document.getElementById('particles');
+  const container = document.getElementById('soul-particles');
+  if(!container) return;
   
   soulIntervalNormal = setInterval(() => {
-    if (gameActive) return; // 対戦中は出ない
+    if (gameActive) return; 
     spawnSoulParticle(container, 'normal');
-  }, 10000); // 10秒ごと
+  }, 10000); 
 
   soulIntervalRare = setInterval(() => {
     if (gameActive) return;
     spawnSoulParticle(container, 'rare');
-  }, 60000); // 1分ごと
+  }, 60000); 
 }
 
 function spawnSoulParticle(container, type) {
-  const p = document.createElement('div');
-  p.className = 'particle soul-particle';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'soul-wrapper';
+  
+  const inner = document.createElement('div');
+  inner.className = 'soul-inner';
   
   let soul;
   if (type === 'normal') {
     soul = normalSouls[Math.floor(Math.random() * normalSouls.length)];
-    const size = Math.random() * 5 + 8; // 通常より少し大きめ
-    p.style.width = size + 'px';
-    p.style.height = size + 'px';
+    const size = Math.random() * 5 + 8; 
+    inner.style.width = size + 'px';
+    inner.style.height = size + 'px';
   } else {
     soul = rareSoul;
-    const size = Math.random() * 8 + 15; // さらに大きめ
-    p.style.width = size + 'px';
-    p.style.height = size + 'px';
+    const size = Math.random() * 8 + 15; 
+    inner.style.width = size + 'px';
+    inner.style.height = size + 'px';
   }
 
-  p.style.backgroundColor = soul.color;
-  p.style.boxShadow = `0 0 10px ${soul.color}, 0 0 20px ${soul.color}`;
-  p.style.left = Math.random() * 80 + 10 + 'vw';
-  p.style.animationDuration = (Math.random() * 4 + 6) + 's';
+  inner.style.backgroundColor = soul.color;
+  inner.style.boxShadow = `0 0 10px ${soul.color}, 0 0 20px ${soul.color}`;
   
-  p.addEventListener('click', () => {
+  wrapper.style.left = Math.random() * 80 + 10 + 'vw';
+  wrapper.style.animationDuration = (Math.random() * 4 + 6) + 's';
+  
+  wrapper.addEventListener('click', () => {
     const modal = document.getElementById('soul-modal');
     const nameSpan = document.getElementById('soul-name');
     nameSpan.innerText = soul.name;
     nameSpan.style.color = soul.color;
     nameSpan.style.textShadow = `0 0 8px ${soul.color}`;
     modal.classList.add('active');
-    p.remove();
+    wrapper.remove();
   });
 
-  p.addEventListener('animationend', () => p.remove());
-  container.appendChild(p);
+  wrapper.addEventListener('animationend', () => wrapper.remove());
+  wrapper.appendChild(inner);
+  container.appendChild(wrapper);
 }
 
-
-// --- データ定義 ---
 const characters = [
   { id: 'frappe', name: 'フラッペ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法', '回復魔法', '結界魔法'], 所属: ['勇者', '現代勇者', 'フラッペパーティ'], 国家: ['バネッサ'] } },
   { id: 'matsuharu', name: 'マツハル', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['光'], 戦法: ['武器', '剣'], 所属: ['勇者', '現代勇者', 'マツハルパーティ'], 国家: ['-'] } },
@@ -675,12 +660,9 @@ function triggerShake() {
   layout.classList.add('shake-effect');
 }
 
-// --- 初期化 ---
 window.onload = () => {
   createParticles();
   startSoulParticles();
-  
-  // 初回のみチュートリアルを表示する
   if (!localStorage.getItem('zmtq_tutorial_shown')) {
     document.getElementById('tutorial-modal').classList.add('active');
     localStorage.setItem('zmtq_tutorial_shown', 'true');
@@ -706,7 +688,6 @@ document.getElementById('role-list-btn').addEventListener('click', () => {
   categories.forEach(cat => {
     let html = `<h3>${cat}</h3><ul>`;
     for(let tag in tagCategoryMap) {
-      // 役として成立不可能なもの（所持者1人）は非表示
       if (tagCategoryMap[tag] === cat && tagCounts[tag] >= 2) {
          html += `<li>${getRoleName(cat, tag)} (基礎: ${tagScores[tag]})</li>`;
       }
@@ -758,7 +739,6 @@ document.getElementById('result-home-btn').addEventListener('click', () => {
   document.getElementById('home-screen').style.display = 'flex';
 });
 
-// --- ゲーム進行・ドロー重複防止処理 ---
 function initGame() {
   currentEnemyHP = maxHP;
   currentPlayerHP = maxHP;
@@ -804,7 +784,7 @@ function drawCards(num, excludeIds) {
     let idx = Math.floor(Math.random() * available.length);
     let card = available[idx];
     drawn.push(card);
-    currentExcludes.push(card.id); // 連続ドロー内での重複も防ぐ
+    currentExcludes.push(card.id); 
   }
   return drawn;
 }
@@ -812,7 +792,6 @@ function drawCards(num, excludeIds) {
 function updateHPUIs() {
   const displayEnemyHP = Math.max(0, currentEnemyHP);
   const displayPlayerHP = Math.max(0, currentPlayerHP);
-
   document.getElementById('enemy-hp-fill').style.height = `${(displayEnemyHP / maxHP) * 100}%`;
   document.getElementById('enemy-hp-text').innerText = displayEnemyHP;
   document.getElementById('player-hp-fill').style.height = `${(displayPlayerHP / maxHP) * 100}%`;
@@ -837,7 +816,6 @@ function renderPlayerHand(refillCount) {
       else cardEl.classList.add('slide-in-right-player');
     }
     cardEl.addEventListener('animationend', () => cardEl.classList.remove('pack-left', 'slide-in-right-player'));
-    
     cardEl.innerHTML = `<img src="${char.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'"><div class="card-name">${char.name}</div>`;
     cardEl.addEventListener('click', () => { if (!isResolvingClash && gameActive) toggleSelection(index, cardEl); });
     container.appendChild(cardEl);
@@ -956,7 +934,6 @@ function launchCpuAttack(cards, roles, indices) {
   const battleArea = document.getElementById('battle-area');
   const battalionEl = document.createElement('div'); battalionEl.className = 'battalion';
   
-  // スマホ対応：開始位置を修正
   const startY = -60; battalionEl.style.transform = `translateY(${startY}px)`;
   cards.forEach(c => {
     const cardEl = document.createElement('div'); cardEl.className = 'card enemy-card';
@@ -972,7 +949,6 @@ function launchCpuAttack(cards, roles, indices) {
   setTimeout(() => {
     if (!activeCpuBattalion) return;
     const targetY = battleArea.clientHeight - battalionEl.clientHeight;
-    // シュッと出てきて止まり、じわじわ進軍
     activeCpuAnimation = battalionEl.animate([
       { transform: `translateY(${startY}px)`, offset: 0 },
       { transform: `translateY(10px)`, offset: 0.05, easing: 'ease-out' },
