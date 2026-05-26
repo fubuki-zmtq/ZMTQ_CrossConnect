@@ -30,6 +30,7 @@
     position: relative;
   }
 
+  /* 背景パーティクル */
   #particles {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -82,6 +83,7 @@
     100% { transform: translateY(-110vh) scale(1.2); opacity: 0; }
   }
 
+  /* モーダル */
   .modal {
     visibility: hidden;
     opacity: 0;
@@ -130,6 +132,7 @@
   .modal-content h3 { color: #87cefa; margin-bottom: 5px; font-size: 1.1rem; }
   .modal-content ul { margin-top: 0; padding-left: 20px; }
 
+  /* ホーム画面 */
   #home-screen {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -145,7 +148,7 @@
     font-size: 2.8rem;
     color: var(--gold);
     text-shadow: 0 0 15px rgba(230, 203, 130, 0.6), 0 5px 5px rgba(0,0,0,0.8);
-    margin-bottom: 5px;
+    margin-bottom: 5px; 
     letter-spacing: 4px;
     text-align: center;
   }
@@ -210,6 +213,7 @@
     box-shadow: 0 0 10px rgba(230, 203, 130, 0.4);
   }
 
+  /* 画面揺れアニメーション */
   @keyframes screenShake {
     0% { transform: translate(0.5px, 0.5px) rotate(0deg); }
     20% { transform: translate(-1.5px, 0px) rotate(0.5deg); }
@@ -220,6 +224,7 @@
   }
   .shake-effect { animation: screenShake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
 
+  /* ゲーム画面レイアウト */
   #game-layout {
     display: none; flex-direction: row; height: 100%; width: 100%; position: relative; z-index: 10;
   }
@@ -280,6 +285,7 @@
   }
   #player-hand-container { display: flex; gap: 8px; justify-content: center; width: 100%; margin-bottom: 12px; }
 
+  /* カードデザイン */
   .card {
     width: 14vw; max-width: 60px; height: 21vw; max-height: 90px; background-color: var(--card-bg);
     border: 1px solid var(--gold-dim); border-radius: 4px; display: flex; flex-direction: column;
@@ -293,6 +299,7 @@
   .player-card { max-width: 70px; max-height: 105px; cursor: pointer; transition: transform 0.2s; }
   .player-card.selected { transform: translateY(-10px); border: 1px solid var(--gold); box-shadow: 0 0 15px rgba(230, 203, 130, 0.6); }
 
+  /* ヒント機能の光沢アニメーション */
   @keyframes hintGlow {
     0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0); }
     50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
@@ -309,6 +316,7 @@
   @keyframes slideInLeftEnemy { 0% { transform: translateX(-80px) rotate(180deg); opacity: 0; } 100% { transform: translateX(0) rotate(180deg); opacity: 1; } }
   .slide-in-left-enemy { animation: slideInLeftEnemy 0.3s ease-out; }
 
+  /* カットイン演出 */
   #cutin-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none;
     flex-direction: column; align-items: center; justify-content: center; z-index: 10;
@@ -349,7 +357,6 @@
   #cutin-overlay.enemy .cutin-slice { border-color: #ff4d4d; }
   #cutin-overlay.special .cutin-slice { border-color: #d8bfd8; box-shadow: 0 0 15px rgba(216, 191, 216, 0.4); }
 
-  /* カットインの表示位置を少し上に調整 (center 20%) */
   .cutin-slice img { width: 100%; height: 100%; object-fit: cover; object-position: center 20%; transform: skewX(15deg) scale(1.2); }
   #cutin-overlay.active .cutin-slice img { animation: imgZoom 1.5s ease-out forwards; }
   @keyframes imgZoom { 0% { transform: skewX(15deg) scale(1.2); } 100% { transform: skewX(15deg) scale(1.35); } }
@@ -452,9 +459,8 @@
     <div class="modal-content">
       <h2>更新情報</h2>
       <ul>
-        <li>v1.2.2 ZMTQ Cross Connect カットインの表示位置を調整しました。</li>
-        <li>v1.2.1 ZMTQ Cross Connect 一部画像を軽量化しました。</li>
-        <li>v1.2.0 ZMTQ Cross Connect キャラクター、新カテゴリを追加しました。</li>
+        <li>v1.2.2 ZMTQ Cross Connect バグの修正とシステム安定性の向上を行いました。</li>
+        <li>v1.2.0 ZMTQ Cross Connect 新カテゴリを追加しました。</li>
         <li>v1.1.0 ZMTQ Cross Connect キャラクターを追加しました。</li>
         <li>v1.0.0 ZMTQ Cross Connect を制作しました。</li>
       </ul>
@@ -515,10 +521,12 @@
   </div>
 
 <script>
+// --- バージョン・自動アップデート確認 ---
 let isUpdatePending = false;
 
 function checkVersionOnLoad() {
-  fetch('version.json')
+  // キャッシュを無効化して確実に最新のJSONを取得する
+  fetch('version.json?t=' + Date.now())
     .then(res => res.json())
     .then(data => {
       const fetchedVersion = data.version;
@@ -529,11 +537,17 @@ function checkVersionOnLoad() {
         document.getElementById('home-version').innerText = fetchedVersion;
         showTutorialOnce();
       } else if (localVersion !== fetchedVersion) {
+        // ロード時にバージョンが違えば、追いついたとみなす
         localStorage.setItem('zmtq_version', fetchedVersion);
         document.getElementById('home-version').innerText = fetchedVersion;
         document.getElementById('update-info-modal').classList.add('active');
       } else {
         document.getElementById('home-version').innerText = fetchedVersion;
+        // リロードボタン経由で更新された場合の表示
+        if (localStorage.getItem('zmtq_just_updated') === 'true') {
+          localStorage.removeItem('zmtq_just_updated');
+          document.getElementById('update-info-modal').classList.add('active');
+        }
       }
     })
     .catch(err => {
@@ -544,7 +558,7 @@ function checkVersionOnLoad() {
 }
 
 function checkVersionBackground() {
-  fetch('version.json')
+  fetch('version.json?t=' + Date.now())
     .then(res => res.json())
     .then(data => {
       const fetchedVersion = data.version;
@@ -561,6 +575,7 @@ function showUpdateAlertIfPossible() {
   if (isUpdatePending && !gameActive && document.getElementById('home-screen').style.display !== 'none') {
     document.getElementById('update-alert-modal').classList.add('active');
     document.getElementById('update-reload-btn').onclick = () => {
+      localStorage.setItem('zmtq_just_updated', 'true');
       location.reload(true);
     };
   }
@@ -570,7 +585,7 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) checkVersionBackground();
 });
 
-setInterval(checkVersionBackground, 300000);
+setInterval(checkVersionBackground, 3600000);
 
 function showTutorialOnce() {
   if (!localStorage.getItem('zmtq_tutorial_shown')) {
@@ -654,6 +669,7 @@ function spawnSoulParticle(container, type) {
   wrapper.appendChild(inner); container.appendChild(wrapper);
 }
 
+// --- キャラクターデータ ---
 const characters = [
   { id: 'frappe', name: 'フラッペ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法', '回復魔法', '結界魔法'], 所属: ['勇者', '現代勇者', 'フラッペパーティ'], 国家: ['バネッサ'], 特徴: ['授命祭経験者'] } },
   { id: 'matsuharu', name: 'マツハル', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['光'], 戦法: ['武器', '剣'], 所属: ['勇者', '現代勇者', 'マツハルパーティ'], 国家: ['-'], 特徴: ['授命祭初心者'] } },
@@ -744,9 +760,106 @@ function triggerShake() {
   layout.classList.add('shake-effect');
 }
 
-function initGame() {
-  document.querySelectorAll('.soul-wrapper').forEach(el => el.remove());
+window.onload = () => {
+  checkVersionOnLoad();
+  createParticles();
+  startSoulParticles();
+};
+
+document.querySelectorAll('.modal').forEach(modal => {
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal && modal.id !== 'difficulty-modal' && modal.id !== 'pause-modal' && modal.id !== 'result-modal' && modal.id !== 'update-alert-modal') {
+      modal.classList.remove('active');
+    }
+  });
+});
+
+document.getElementById('help-btn').addEventListener('click', () => {
+  document.getElementById('tutorial-modal').classList.add('active');
+});
+
+document.getElementById('update-info-btn').addEventListener('click', () => {
+  document.getElementById('update-info-modal').classList.add('active');
+});
+
+document.getElementById('role-list-btn').addEventListener('click', () => {
+  const container = document.getElementById('role-list-content');
+  container.innerHTML = '';
   
+  let unlockedSpecials = JSON.parse(localStorage.getItem('zmtq_specials') || '[]');
+  
+  let specialHtml = `<h3>特殊役</h3><ul>`;
+  specialRoles.forEach(sr => {
+    if (unlockedSpecials.includes(sr.name)) {
+      specialHtml += `<li style="color:#d8bfd8;">${sr.name} (基礎: ${sr.ids.length * 50})</li>`;
+    } else {
+      specialHtml += `<li style="color:#555;">？？？ (未発見)</li>`;
+    }
+  });
+  specialHtml += `</ul>`;
+  container.innerHTML += specialHtml;
+
+  const categories = ['種族', '役職', '属性', '戦法', '所属', '国家', '特徴'];
+  categories.forEach(cat => {
+    let html = `<h3>${cat}</h3><ul>`;
+    for(let tag in tagCategoryMap) {
+      if (tagCategoryMap[tag] === cat && tagCounts[tag] >= 2) {
+         html += `<li>${getRoleName(cat, tag)} (基礎: ${tagScores[tag]})</li>`;
+      }
+    }
+    html += `</ul>`;
+    container.innerHTML += html;
+  });
+  document.getElementById('role-list-modal').classList.add('active');
+});
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('difficulty-modal').classList.add('active');
+});
+
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    currentDifficulty = e.currentTarget.getAttribute('data-diff');
+    document.getElementById('difficulty-modal').classList.remove('active');
+    document.getElementById('home-screen').style.display = 'none';
+    document.getElementById('game-layout').style.display = 'flex';
+    
+    document.querySelectorAll('.soul-wrapper').forEach(el => el.remove());
+    
+    initGame();
+  });
+});
+
+document.getElementById('menu-btn').addEventListener('click', () => {
+  if(!gameActive || isResolvingClash) return;
+  if(activeCpuAnimation) activeCpuAnimation.pause();
+  document.getElementById('pause-modal').classList.add('active');
+});
+
+document.getElementById('resume-btn').addEventListener('click', () => {
+  document.getElementById('pause-modal').classList.remove('active');
+  if(activeCpuAnimation) activeCpuAnimation.play();
+});
+
+document.getElementById('quit-btn').addEventListener('click', () => {
+  document.getElementById('pause-modal').classList.remove('active');
+  abortGame();
+  setTimeout(showUpdateAlertIfPossible, 100);
+});
+
+document.getElementById('rematch-btn').addEventListener('click', () => {
+  document.getElementById('result-modal').classList.remove('active');
+  initGame();
+});
+
+document.getElementById('result-home-btn').addEventListener('click', () => {
+  document.getElementById('result-modal').classList.remove('active');
+  document.getElementById('game-layout').style.display = 'none';
+  document.getElementById('home-screen').style.display = 'flex';
+  setTimeout(showUpdateAlertIfPossible, 100);
+});
+
+function initGame() {
   currentEnemyHP = maxHP;
   currentPlayerHP = maxHP;
   updateHPUIs();
