@@ -30,6 +30,7 @@
     position: relative;
   }
 
+  /* 背景パーティクル */
   #particles {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -82,6 +83,7 @@
     100% { transform: translateY(-110vh) scale(1.2); opacity: 0; }
   }
 
+  /* モーダル */
   .modal {
     visibility: hidden;
     opacity: 0;
@@ -130,6 +132,7 @@
   .modal-content h3 { color: #87cefa; margin-bottom: 5px; font-size: 1.1rem; }
   .modal-content ul { margin-top: 0; padding-left: 20px; }
 
+  /* ホーム画面 */
   #home-screen {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -145,9 +148,16 @@
     font-size: 2.8rem;
     color: var(--gold);
     text-shadow: 0 0 15px rgba(230, 203, 130, 0.6), 0 5px 5px rgba(0,0,0,0.8);
-    margin-bottom: 50px;
+    margin-bottom: 5px; /* バージョン表示のために少し縮小 */
     letter-spacing: 4px;
     text-align: center;
+  }
+  #home-version {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.1rem;
+    color: var(--gold-dim);
+    margin-bottom: 40px;
+    letter-spacing: 2px;
   }
 
   .home-btn, #action-btn {
@@ -203,6 +213,7 @@
     box-shadow: 0 0 10px rgba(230, 203, 130, 0.4);
   }
 
+  /* 画面揺れアニメーション */
   @keyframes screenShake {
     0% { transform: translate(0.5px, 0.5px) rotate(0deg); }
     20% { transform: translate(-1.5px, 0px) rotate(0.5deg); }
@@ -213,6 +224,7 @@
   }
   .shake-effect { animation: screenShake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
 
+  /* ゲーム画面レイアウト */
   #game-layout {
     display: none; flex-direction: row; height: 100%; width: 100%; position: relative; z-index: 10;
   }
@@ -273,6 +285,7 @@
   }
   #player-hand-container { display: flex; gap: 8px; justify-content: center; width: 100%; margin-bottom: 12px; }
 
+  /* カードデザイン */
   .card {
     width: 14vw; max-width: 60px; height: 21vw; max-height: 90px; background-color: var(--card-bg);
     border: 1px solid var(--gold-dim); border-radius: 4px; display: flex; flex-direction: column;
@@ -303,6 +316,7 @@
   @keyframes slideInLeftEnemy { 0% { transform: translateX(-80px) rotate(180deg); opacity: 0; } 100% { transform: translateX(0) rotate(180deg); opacity: 1; } }
   .slide-in-left-enemy { animation: slideInLeftEnemy 0.3s ease-out; }
 
+  /* カットイン演出 */
   #cutin-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none;
     flex-direction: column; align-items: center; justify-content: center; z-index: 10;
@@ -385,7 +399,6 @@
     .cutin-text-inner { padding: 8px 20px; }
     .sidebar-hp { width: 32px; }
     
-    /* スマホ時のカットイン枠の自動縮小 */
     #cutin-panel-container { width: 90vw; }
     .cutin-slice { flex: 1 1 0; min-width: 0; width: auto; }
   }
@@ -399,6 +412,7 @@
   <div id="home-screen">
     <button id="help-btn">？</button>
     <div id="home-title">ZMTQ Cross Connect</div>
+    <div id="home-version">v1.2.0</div>
     <button id="start-btn" class="home-btn">ゲーム開始</button>
     <button id="role-list-btn" class="home-btn">役一覧</button>
     <button id="update-info-btn" class="home-btn">更新情報</button>
@@ -445,6 +459,7 @@
     <div class="modal-content">
       <h2>更新情報</h2>
       <ul>
+        <li>v1.2.0 ZMTQ Cross Connect キャラクター、新カテゴリを追加しました。</li>
         <li>v1.1.0 ZMTQ Cross Connect キャラクターを追加しました。</li>
         <li>v1.0.0 ZMTQ Cross Connect を制作しました。</li>
       </ul>
@@ -505,8 +520,10 @@
   </div>
 
 <script>
-// --- バージョンチェック ---
-function checkVersion() {
+// --- バージョン・自動アップデート確認 ---
+let isUpdatePending = false;
+
+function checkVersionOnLoad() {
   fetch('version.json')
     .then(res => res.json())
     .then(data => {
@@ -515,25 +532,54 @@ function checkVersion() {
       
       if (!localVersion) {
         localStorage.setItem('zmtq_version', fetchedVersion);
+        document.getElementById('home-version').innerText = fetchedVersion;
         showTutorialOnce();
       } else if (localVersion !== fetchedVersion) {
-        document.getElementById('update-alert-modal').classList.add('active');
-        document.getElementById('update-reload-btn').onclick = () => {
-          localStorage.setItem('zmtq_version', fetchedVersion);
-          localStorage.setItem('zmtq_just_updated', 'true');
-          location.reload(true);
-        };
+        // 再読み込みでバージョンが追いついた瞬間
+        localStorage.setItem('zmtq_version', fetchedVersion);
+        document.getElementById('home-version').innerText = fetchedVersion;
+        document.getElementById('update-info-modal').classList.add('active');
       } else {
-        if (localStorage.getItem('zmtq_just_updated') === 'true') {
-          localStorage.removeItem('zmtq_just_updated');
-          document.getElementById('update-info-modal').classList.add('active');
-        }
+        document.getElementById('home-version').innerText = fetchedVersion;
       }
     })
     .catch(err => {
+      const localV = localStorage.getItem('zmtq_version') || 'v1.2.0';
+      document.getElementById('home-version').innerText = localV;
       showTutorialOnce();
     });
 }
+
+function checkVersionBackground() {
+  fetch('version.json')
+    .then(res => res.json())
+    .then(data => {
+      const fetchedVersion = data.version;
+      const localVersion = localStorage.getItem('zmtq_version');
+      if (localVersion && localVersion !== fetchedVersion) {
+        isUpdatePending = true;
+        showUpdateAlertIfPossible();
+      }
+    })
+    .catch(err => {});
+}
+
+function showUpdateAlertIfPossible() {
+  if (isUpdatePending && !gameActive && document.getElementById('home-screen').style.display !== 'none') {
+    document.getElementById('update-alert-modal').classList.add('active');
+    document.getElementById('update-reload-btn').onclick = () => {
+      location.reload(true);
+    };
+  }
+}
+
+// タブ復帰時やデバイス復帰時に裏でチェック
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkVersionBackground();
+});
+
+// 1時間おきにチェック
+setInterval(checkVersionBackground, 3600000);
 
 function showTutorialOnce() {
   if (!localStorage.getItem('zmtq_tutorial_shown')) {
@@ -547,7 +593,7 @@ function createParticles() {
   const container = document.getElementById('particles');
   if(!container) return;
   setInterval(() => {
-    if (document.hidden) return; // 非表示時は作成しない
+    if (document.hidden) return; 
     const p = document.createElement('div');
     p.className = 'particle';
     p.style.left = Math.random() * 100 + 'vw';
@@ -619,28 +665,29 @@ function spawnSoulParticle(container, type) {
   wrapper.appendChild(inner); container.appendChild(wrapper);
 }
 
+// --- キャラクターデータ ---
 const characters = [
-  { id: 'frappe', name: 'フラッペ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法', '回復魔法', '結界魔法'], 所属: ['勇者', '現代勇者', 'フラッペパーティ'], 国家: ['バネッサ'] } },
-  { id: 'matsuharu', name: 'マツハル', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['光'], 戦法: ['武器', '剣'], 所属: ['勇者', '現代勇者', 'マツハルパーティ'], 国家: ['-'] } },
-  { id: 'decoy', name: 'デコイ', tags: { 種族: ['人間'], 役職: ['弓使い'], 属性: ['火'], 戦法: ['武器', '弓矢'], 所属: ['勇者', '現代勇者', 'リリー商会', 'デコイパーティ'], 国家: ['バネッサ'] } },
-  { id: 'musubi', name: '心結', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['光'], 戦法: ['武器', '刀', '白魔法'], 所属: ['勇者', '現代勇者', '心結パーティ'], 国家: ['東の国'] } },
-  { id: 'luna', name: 'ルナ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法', '回復魔法', '強化魔法'], 所属: ['勇者', '現代勇者', 'ルナパーティ'], 国家: ['バネッサ'] } },
-  { id: 'alice', name: 'アリス', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['火'], 戦法: ['武器', '剣'], 所属: ['勇者', '現代勇者', 'バネッサ近衛兵', 'アリスパーティ'], 国家: ['バネッサ'] } },
-  { id: 'lily', name: 'リリー', tags: { 種族: ['人間'], 役職: ['商人'], 属性: ['火', '雷'], 戦法: ['武器', '魔導具'], 所属: ['リリー商会'], 国家: ['トラベラー'] } },
-  { id: 'kinako', name: 'キナコ', tags: { 種族: ['獣人', '犬獣人'], 役職: ['近衛兵'], 属性: ['光'], 戦法: ['武器', '剣'], 所属: ['バネッサ近衛兵'], 国家: ['バネッサ', '獣の国'] } },
-  { id: '1gou', name: '壱ノ護王', tags: { 種族: ['人間'], 役職: ['護王'], 属性: ['光', '雷'], 戦法: ['魔法', '黒魔法', '白魔法', '回復魔法', '結界魔法'], 所属: ['-'], 国家: ['バネッサ'] } },
-  { id: '3gou', name: '參ノ護王', tags: { 種族: ['魔族'], 役職: ['護王'], 属性: ['闇', '火'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'] } },
-  { id: 'jaga', name: 'ジャガ', tags: { 種族: ['魔族', 'スライム'], 役職: ['狂戦士', '賢者'], 属性: ['水', '地', '雷', '火', '光'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'] } },
-  { id: 'kurumi', name: 'クルミ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法'], 所属: ['-'], 国家: ['バネッサ', '華都'] } },
-  { id: 'fufu', name: 'フフ', tags: { 種族: ['人間'], 役職: ['神官'], 属性: ['光'], 戦法: ['魔法', '封印魔法'], 所属: ['ビックス教団'], 国家: ['教団市国'] } },
-  { id: 'akito', name: 'アキト', tags: { 種族: ['吸血鬼'], 役職: ['道化師', '暗黒道化師'], 属性: ['闇'], 戦法: ['魔法', '黒魔法'], 所属: ['-'], 国家: ['トラベラー'] } },
-  { id: 'yocchi', name: 'ヨッチ', tags: { 種族: ['吸血鬼'], 役職: ['道化師'], 属性: ['闇', '風'], 戦法: ['魔法', '黒魔法'], 所属: ['勇者', '古代勇者'], 国家: ['トラベラー'] } },
-  { id: 'mahhi', name: 'マッヒー', tags: { 種族: ['人間'], 役職: ['狂戦士', 'トレジャーハンター'], 属性: ['火', '風'], 戦法: ['物理', '魔法'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'] } },
-  { id: 'kyoka', name: 'キョーカ・サンタボ', tags: { 種族: ['人間'], 役職: ['トレジャーハンター'], 属性: ['火'], 戦法: ['魔法', '強化魔法'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'] } },
-  { id: 'barg', name: 'バーグ・ダイジン', tags: { 種族: ['人間'], 役職: ['トレジャーハンター'], 属性: ['火'], 戦法: ['魔法', '物理'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'] } },
-  { id: 'nikuman', name: '肉まん', tags: { 種族: ['式神'], 役職: ['使い魔'], 属性: ['火'], 戦法: ['魔法'], 所属: ['デコイパーティ'], 国家: ['バネッサ'] } },
-  { id: 'pipirara', name: 'ピピララ', tags: { 種族: ['魔族', 'デビル'], 役職: ['秘書'], 属性: ['火'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'] } },
-  { id: 'aiamu', name: 'アイアム', tags: { 種族: ['魔族', 'スライム'], 役職: ['使い魔'], 属性: ['水'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'] } }
+  { id: 'frappe', name: 'フラッペ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法', '回復魔法', '結界魔法'], 所属: ['勇者', '現代勇者', 'フラッペパーティ'], 国家: ['バネッサ'], 特徴: ['授命祭経験者'] } },
+  { id: 'matsuharu', name: 'マツハル', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['光'], 戦法: ['武器', '剣'], 所属: ['勇者', '現代勇者', 'マツハルパーティ'], 国家: ['-'], 特徴: ['授命祭初心者'] } },
+  { id: 'decoy', name: 'デコイ', tags: { 種族: ['人間'], 役職: ['弓使い'], 属性: ['火'], 戦法: ['武器', '弓矢'], 所属: ['勇者', '現代勇者', 'リリー商会', 'デコイパーティ'], 国家: ['バネッサ'], 特徴: ['授命祭初心者'] } },
+  { id: 'musubi', name: '心結', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['光'], 戦法: ['武器', '刀', '白魔法'], 所属: ['勇者', '現代勇者', '心結パーティ'], 国家: ['東の国'], 特徴: ['授命祭初心者'] } },
+  { id: 'luna', name: 'ルナ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法', '回復魔法', '強化魔法'], 所属: ['勇者', '現代勇者', 'ルナパーティ'], 国家: ['バネッサ'], 特徴: ['授命祭経験者'] } },
+  { id: 'alice', name: 'アリス', tags: { 種族: ['人間'], 役職: ['聖騎士'], 属性: ['火'], 戦法: ['武器', '剣'], 所属: ['勇者', '現代勇者', 'バネッサ近衛兵', 'アリスパーティ'], 国家: ['バネッサ'], 特徴: ['授命祭経験者'] } },
+  { id: 'lily', name: 'リリー', tags: { 種族: ['人間'], 役職: ['商人'], 属性: ['火', '雷'], 戦法: ['武器', '魔導具'], 所属: ['リリー商会'], 国家: ['トラベラー'], 特徴: ['-'] } },
+  { id: 'kinako', name: 'キナコ', tags: { 種族: ['獣人', '犬獣人'], 役職: ['近衛兵'], 属性: ['光'], 戦法: ['武器', '剣'], 所属: ['バネッサ近衛兵'], 国家: ['バネッサ', '獣の国'], 特徴: ['-'] } },
+  { id: '1gou', name: '壱ノ護王', tags: { 種族: ['人間'], 役職: ['護王'], 属性: ['光', '雷'], 戦法: ['魔法', '黒魔法', '白魔法', '回復魔法', '結界魔法'], 所属: ['-'], 国家: ['バネッサ'], 特徴: ['長命'] } },
+  { id: '3gou', name: '參ノ護王', tags: { 種族: ['魔族'], 役職: ['護王'], 属性: ['闇', '火'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'], 特徴: ['長命'] } },
+  { id: 'jaga', name: 'ジャガ', tags: { 種族: ['魔族', 'スライム'], 役職: ['狂戦士', '賢者'], 属性: ['水', '地', '雷', '火', '光'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'], 特徴: ['-'] } },
+  { id: 'kurumi', name: 'クルミ', tags: { 種族: ['人間'], 役職: ['白魔道士'], 属性: ['光'], 戦法: ['魔法', '白魔法'], 所属: ['-'], 国家: ['バネッサ', '華都'], 特徴: ['-'] } },
+  { id: 'fufu', name: 'フフ', tags: { 種族: ['人間'], 役職: ['神官'], 属性: ['光'], 戦法: ['魔法', '封印魔法'], 所属: ['ビックス教団'], 国家: ['教団市国'], 特徴: ['-'] } },
+  { id: 'akito', name: 'アキト', tags: { 種族: ['吸血鬼'], 役職: ['道化師', '暗黒道化師'], 属性: ['闇'], 戦法: ['魔法', '黒魔法'], 所属: ['-'], 国家: ['トラベラー'], 特徴: ['-'] } },
+  { id: 'yocchi', name: 'ヨッチ', tags: { 種族: ['吸血鬼'], 役職: ['道化師'], 属性: ['闇', '風'], 戦法: ['魔法', '黒魔法'], 所属: ['勇者', '古代勇者'], 国家: ['トラベラー'], 特徴: ['長命'] } },
+  { id: 'mahhi', name: 'マッヒー', tags: { 種族: ['人間'], 役職: ['狂戦士', 'トレジャーハンター'], 属性: ['火', '風'], 戦法: ['物理', '魔法'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'], 特徴: ['-'] } },
+  { id: 'kyoka', name: 'キョーカ・サンタボ', tags: { 種族: ['人間'], 役職: ['トレジャーハンター'], 属性: ['火'], 戦法: ['魔法', '強化魔法'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'], 特徴: ['-'] } },
+  { id: 'barg', name: 'バーグ・ダイジン', tags: { 種族: ['人間'], 役職: ['トレジャーハンター'], 属性: ['火'], 戦法: ['魔法', '物理'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'], 特徴: ['-'] } },
+  { id: 'nikuman', name: '肉まん', tags: { 種族: ['式神'], 役職: ['使い魔'], 属性: ['火'], 戦法: ['魔法'], 所属: ['デコイパーティ'], 国家: ['バネッサ'], 特徴: ['-'] } },
+  { id: 'pipirara', name: 'ピピララ', tags: { 種族: ['魔族', 'デビル'], 役職: ['秘書'], 属性: ['火'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'], 特徴: ['-'] } },
+  { id: 'aiamu', name: 'アイアム', tags: { 種族: ['魔族', 'スライム'], 役職: ['使い魔'], 属性: ['水'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'], 特徴: ['-'] } }
 ];
 
 const specialRoles = [
@@ -680,6 +727,7 @@ function getRoleName(category, tag) {
     case '戦法': return `${tag}使いの集い`;
     case '所属': return `${tag}の一員`;
     case '国家': return `${tag}同盟`;
+    case '特徴': return `${tag}グループ`;
     default: return `${tag}`;
   }
 }
@@ -708,8 +756,9 @@ function triggerShake() {
   layout.classList.add('shake-effect');
 }
 
+// --- イベント登録 ---
 window.onload = () => {
-  checkVersion();
+  checkVersionOnLoad();
   createParticles();
   startSoulParticles();
 };
@@ -747,7 +796,7 @@ document.getElementById('role-list-btn').addEventListener('click', () => {
   specialHtml += `</ul>`;
   container.innerHTML += specialHtml;
 
-  const categories = ['種族', '役職', '属性', '戦法', '所属', '国家'];
+  const categories = ['種族', '役職', '属性', '戦法', '所属', '国家', '特徴'];
   categories.forEach(cat => {
     let html = `<h3>${cat}</h3><ul>`;
     for(let tag in tagCategoryMap) {
@@ -771,6 +820,10 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
     document.getElementById('difficulty-modal').classList.remove('active');
     document.getElementById('home-screen').style.display = 'none';
     document.getElementById('game-layout').style.display = 'flex';
+    
+    // 戦闘開始時に魂のパーティクルを綺麗に消す
+    document.querySelectorAll('.soul-wrapper').forEach(el => el.remove());
+    
     initGame();
   });
 });
@@ -789,6 +842,7 @@ document.getElementById('resume-btn').addEventListener('click', () => {
 document.getElementById('quit-btn').addEventListener('click', () => {
   document.getElementById('pause-modal').classList.remove('active');
   abortGame();
+  setTimeout(showUpdateAlertIfPossible, 100);
 });
 
 document.getElementById('rematch-btn').addEventListener('click', () => {
@@ -800,11 +854,10 @@ document.getElementById('result-home-btn').addEventListener('click', () => {
   document.getElementById('result-modal').classList.remove('active');
   document.getElementById('game-layout').style.display = 'none';
   document.getElementById('home-screen').style.display = 'flex';
+  setTimeout(showUpdateAlertIfPossible, 100);
 });
 
 function initGame() {
-  document.querySelectorAll('.soul-wrapper').forEach(el => el.remove());
-  
   currentEnemyHP = maxHP;
   currentPlayerHP = maxHP;
   updateHPUIs();
@@ -911,7 +964,7 @@ function renderPlayerHand(refillCount) {
       cardEl.classList.remove('pack-left', 'slide-in-right-player');
     });
     
-    cardEl.innerHTML = `<img src="${char.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'"><div class="card-name">${char.name}</div>`;
+    cardEl.innerHTML = `<img src="images/${char.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'"><div class="card-name">${char.name}</div>`;
     cardEl.addEventListener('click', () => {
       document.querySelectorAll('.hint-glow').forEach(el => el.classList.remove('hint-glow'));
       if (!isResolvingClash && gameActive) toggleSelection(index, cardEl);
@@ -933,7 +986,7 @@ function renderCpuHand(refillCount) {
       else cardEl.classList.add('pack-right');
     }
     cardEl.addEventListener('animationend', () => cardEl.classList.remove('pack-right', 'slide-in-left-enemy'));
-    cardEl.innerHTML = `<img src="${char.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'">`;
+    cardEl.innerHTML = `<img src="images/${char.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'">`;
     container.appendChild(cardEl);
   });
 }
@@ -1037,7 +1090,7 @@ function launchCpuAttack(cards, roles, indices) {
   const startY = -60; battalionEl.style.transform = `translateY(${startY}px)`;
   cards.forEach(c => {
     const cardEl = document.createElement('div'); cardEl.className = 'card enemy-card';
-    cardEl.innerHTML = `<img src="${c.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'">`;
+    cardEl.innerHTML = `<img src="images/${c.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'">`;
     battalionEl.appendChild(cardEl);
   });
   battleArea.appendChild(battalionEl);
@@ -1100,7 +1153,7 @@ document.getElementById('action-btn').addEventListener('click', async () => {
   
   selectedCards.forEach(c => {
     const cardEl = document.createElement('div'); cardEl.className = 'card';
-    cardEl.innerHTML = `<img src="${c.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'">`;
+    cardEl.innerHTML = `<img src="images/${c.id}.png" onerror="this.src=''; this.style.backgroundColor='#2d3748'">`;
     playerBattalionEl.appendChild(cardEl);
   });
   battleArea.appendChild(playerBattalionEl);
@@ -1164,7 +1217,7 @@ async function playChainCutins(cards, roles, type) {
   panelContainer.innerHTML = '<div class="cutin-glare"></div>'; 
   cards.forEach(char => {
     const slice = document.createElement('div'); slice.className = 'cutin-slice';
-    const img = document.createElement('img'); img.src = `${char.id}.png`; img.onerror = function() { this.src=''; this.style.backgroundColor='#2d3748'; };
+    const img = document.createElement('img'); img.src = `images/${char.id}.png`; img.onerror = function() { this.src=''; this.style.backgroundColor='#2d3748'; };
     slice.appendChild(img); panelContainer.appendChild(slice);
   });
 
