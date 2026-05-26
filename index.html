@@ -579,8 +579,8 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) checkVersionBackground();
 });
 
-// 1時間おきにチェック
-setInterval(checkVersionBackground, 3600000);
+// 5分おきにチェック
+setInterval(checkVersionBackground, 300000);
 
 function showTutorialOnce() {
   if (!localStorage.getItem('zmtq_tutorial_shown')) {
