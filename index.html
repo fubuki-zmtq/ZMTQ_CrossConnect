@@ -360,9 +360,6 @@
     text-align: right; background: rgba(0, 0, 0, 0.7); padding: 10px 30px; border-left: 4px solid; opacity: 0;
     animation: textSlide 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards; transition: all 0.3s;
   }
-  #cutin-overlay.player .cutin-text-inner { border-color: #4169e1; }
-  #cutin-overlay.enemy .cutin-text-inner { border-color: #ff4d4d; }
-  #cutin-overlay.special .cutin-text-inner { border-color: #d8bfd8; background: rgba(0, 0, 0, 0.85); box-shadow: 0 0 15px rgba(216, 191, 216, 0.5); }
 
   @keyframes textSlide {
     0% { transform: translateX(100px); opacity: 0; }
@@ -387,10 +384,10 @@
     .cutin-text-score { font-size: 1.1rem; }
     .cutin-text-inner { padding: 8px 20px; }
     .sidebar-hp { width: 32px; }
-    .card { width: 15vw; height: 22.5vw; }
-    .player-card { max-width: 60px; max-height: 90px; }
-    #player-area { min-height: 15vh; }
-    #enemy-area { min-height: 10vh; }
+    
+    /* スマホ時のカットイン枠の自動縮小 */
+    #cutin-panel-container { width: 90vw; }
+    .cutin-slice { flex: 1 1 0; min-width: 0; width: auto; }
   }
 </style>
 </head>
@@ -439,7 +436,7 @@
   <div id="role-list-modal" class="modal">
     <div class="modal-content">
       <h2>役一覧</h2>
-      <p style="color: var(--gold); font-size: 0.9rem; text-align: center;">※ここには書かれていない高得点の隠し役もあります</p>
+      <p style="color: var(--gold); font-size: 0.9rem; text-align: center;">※ここには書かれていない高得点の特殊役もあります</p>
       <div id="role-list-content"></div>
     </div>
   </div>
@@ -448,6 +445,7 @@
     <div class="modal-content">
       <h2>更新情報</h2>
       <ul>
+        <li>v1.1.0 ZMTQ Cross Connect キャラクターを追加しました。</li>
         <li>v1.0.0 ZMTQ Cross Connect を制作しました。</li>
       </ul>
     </div>
@@ -533,7 +531,6 @@ function checkVersion() {
       }
     })
     .catch(err => {
-      // ローカル環境等でのFetch失敗時は通常起動
       showTutorialOnce();
     });
 }
@@ -550,6 +547,7 @@ function createParticles() {
   const container = document.getElementById('particles');
   if(!container) return;
   setInterval(() => {
+    if (document.hidden) return; // 非表示時は作成しない
     const p = document.createElement('div');
     p.className = 'particle';
     p.style.left = Math.random() * 100 + 'vw';
@@ -578,12 +576,12 @@ function startSoulParticles() {
   if(!container) return;
   
   setInterval(() => {
-    if (gameActive) return; 
+    if (gameActive || document.hidden) return; 
     spawnSoulParticle(container, 'normal');
   }, 10000); 
 
   setInterval(() => {
-    if (gameActive) return;
+    if (gameActive || document.hidden) return;
     spawnSoulParticle(container, 'rare');
   }, 60000); 
 }
@@ -640,7 +638,9 @@ const characters = [
   { id: 'mahhi', name: 'マッヒー', tags: { 種族: ['人間'], 役職: ['狂戦士', 'トレジャーハンター'], 属性: ['火', '風'], 戦法: ['物理', '魔法'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'] } },
   { id: 'kyoka', name: 'キョーカ・サンタボ', tags: { 種族: ['人間'], 役職: ['トレジャーハンター'], 属性: ['火'], 戦法: ['魔法', '強化魔法'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'] } },
   { id: 'barg', name: 'バーグ・ダイジン', tags: { 種族: ['人間'], 役職: ['トレジャーハンター'], 属性: ['火'], 戦法: ['魔法', '物理'], 所属: ['天聖マッヒーズ'], 国家: ['トラベラー'] } },
-  { id: 'nikuman', name: '肉まん', tags: { 種族: ['式神'], 役職: ['使い魔'], 属性: ['火'], 戦法: ['魔法'], 所属: ['デコイパーティ'], 国家: ['バネッサ'] } }
+  { id: 'nikuman', name: '肉まん', tags: { 種族: ['式神'], 役職: ['使い魔'], 属性: ['火'], 戦法: ['魔法'], 所属: ['デコイパーティ'], 国家: ['バネッサ'] } },
+  { id: 'pipirara', name: 'ピピララ', tags: { 種族: ['魔族', 'デビル'], 役職: ['秘書'], 属性: ['火'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'] } },
+  { id: 'aiamu', name: 'アイアム', tags: { 種族: ['魔族', 'スライム'], 役職: ['使い魔'], 属性: ['水'], 戦法: ['魔法', '黒魔法'], 所属: ['魔王軍'], 国家: ['魔王領'] } }
 ];
 
 const specialRoles = [
@@ -734,10 +734,9 @@ document.getElementById('role-list-btn').addEventListener('click', () => {
   const container = document.getElementById('role-list-content');
   container.innerHTML = '';
   
-  // 解放済みの特殊役を取得
   let unlockedSpecials = JSON.parse(localStorage.getItem('zmtq_specials') || '[]');
   
-  let specialHtml = `<h3>隠し役（特殊）</h3><ul>`;
+  let specialHtml = `<h3>特殊役</h3><ul>`;
   specialRoles.forEach(sr => {
     if (unlockedSpecials.includes(sr.name)) {
       specialHtml += `<li style="color:#d8bfd8;">${sr.name} (基礎: ${sr.ids.length * 50})</li>`;
@@ -840,9 +839,13 @@ function abortGame() {
 function drawCards(num, excludeIds) {
   let drawn = [];
   let currentExcludes = [...excludeIds];
+  
   for (let i = 0; i < num; i++) {
     let available = characters.filter(c => !currentExcludes.includes(c.id));
-    if (available.length === 0) { available = [...characters]; currentExcludes = []; }
+    if (available.length === 0) {
+      available = [...characters];
+      currentExcludes = [];
+    }
     let idx = Math.floor(Math.random() * available.length);
     let card = available[idx];
     drawn.push(card);
@@ -866,7 +869,6 @@ async function showEventMessage(text, color = 'var(--gold)') {
   await sleep(1500); msgEl.style.opacity = 0;
 }
 
-// サポート（ヒント）機能
 function showHint() {
   if (currentDifficulty === 'HARD') return;
   document.querySelectorAll('.hint-glow').forEach(el => el.classList.remove('hint-glow'));
