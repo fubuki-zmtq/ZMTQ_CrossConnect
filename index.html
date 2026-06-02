@@ -414,7 +414,7 @@
   <div id="home-screen">
     <button id="help-btn">？</button>
     <div id="home-title">ZMTQ Cross Connect</div>
-    <div id="home-version">v1.2.3</div>
+    <div id="home-version">v1.2.4</div>
     <button id="start-btn" class="home-btn">ゲーム開始</button>
     <button id="role-list-btn" class="home-btn">役一覧</button>
     <button id="update-info-btn" class="home-btn">更新情報</button>
@@ -461,6 +461,7 @@
     <div class="modal-content">
       <h2>更新情報</h2>
       <ul>
+        <li>v1.2.4 更新通知がうまくはたらかない問題を修正しました。</li>
         <li>v1.2.3 アイコンを設定し、微調整を行いました。</li>
         <li>v1.2.2 バグの修正とシステム安定性の向上を行いました。</li>
         <li>v1.2.1 一部画像を軽量化しました。</li>
@@ -540,11 +541,14 @@ function checkVersionOnLoad() {
         localStorage.setItem('zmtq_version', fetchedVersion);
         document.getElementById('home-version').innerText = fetchedVersion;
         showTutorialOnce();
+      // 【こちらに書き換えてください】
       } else if (localVersion !== fetchedVersion) {
-        // ロード時にバージョンが違えば、追いついたとみなす
-        localStorage.setItem('zmtq_version', fetchedVersion);
-        document.getElementById('home-version').innerText = fetchedVersion;
-        document.getElementById('update-info-modal').classList.add('active');
+        // バージョンが違う場合は「更新があります！」ポップアップを出す
+        document.getElementById('update-alert-modal').classList.add('active');
+        document.getElementById('update-reload-btn').onclick = () => {
+        localStorage.setItem('zmtq_just_updated', 'true');
+        location.reload(true);
+        };
       } else {
         document.getElementById('home-version').innerText = fetchedVersion;
         // リロードボタン経由で更新された場合の表示
@@ -555,7 +559,7 @@ function checkVersionOnLoad() {
       }
     })
     .catch(err => {
-      const localV = localStorage.getItem('zmtq_version') || 'v1.2.3';
+      const localV = localStorage.getItem('zmtq_version') || 'v1.2.4';
       document.getElementById('home-version').innerText = localV;
       showTutorialOnce();
     });
