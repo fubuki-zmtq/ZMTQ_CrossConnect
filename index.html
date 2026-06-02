@@ -546,8 +546,9 @@ function checkVersionOnLoad() {
         // バージョンが違う場合は「更新があります！」ポップアップを出す
         document.getElementById('update-alert-modal').classList.add('active');
         document.getElementById('update-reload-btn').onclick = () => {
-        localStorage.setItem('zmtq_just_updated', 'true');
-        location.reload(true);
+          localStorage.setItem('zmtq_version', fetchedVersion);
+          localStorage.setItem('zmtq_just_updated', 'true');
+          location.reload(true);
         };
       } else {
         document.getElementById('home-version').innerText = fetchedVersion;
