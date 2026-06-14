@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ZMTQ Cross Connect</title>
-<link rel="icon" href="images/icon.png?v=2">
-<link rel="apple-touch-icon" href="images/icon.png?v=2">
+<link rel="icon" href="images/cross_icon.png">
+<link rel="apple-touch-icon" href="images/cross_icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Noto+Sans+JP:wght@400;700&family=Oswald:wght@500&family=Shippori+Mincho:wght@700&display=swap" rel="stylesheet">
@@ -414,7 +414,7 @@
   <div id="home-screen">
     <button id="help-btn">？</button>
     <div id="home-title">ZMTQ Cross Connect</div>
-    <div id="home-version">v1.2.4</div>
+    <div id="home-version">v1.2.5</div>
     <button id="start-btn" class="home-btn">ゲーム開始</button>
     <button id="role-list-btn" class="home-btn">役一覧</button>
     <button id="update-info-btn" class="home-btn">更新情報</button>
@@ -461,6 +461,7 @@
     <div class="modal-content">
       <h2>更新情報</h2>
       <ul>
+        <li>v1.2.5 アイコン画像表示のための調整を行いました。</li>
         <li>v1.2.4 更新通知がうまくはたらかない問題を修正しました。</li>
         <li>v1.2.3 アイコンを設定し、微調整を行いました。</li>
         <li>v1.2.2 バグの修正とシステム安定性の向上を行いました。</li>
@@ -560,7 +561,7 @@ function checkVersionOnLoad() {
       }
     })
     .catch(err => {
-      const localV = localStorage.getItem('zmtq_version') || 'v1.2.4';
+      const localV = localStorage.getItem('zmtq_version') || 'v1.2.5';
       document.getElementById('home-version').innerText = localV;
       showTutorialOnce();
     });
